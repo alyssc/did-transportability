@@ -1,0 +1,32 @@
+---
+title: "CPC+ Simulation"
+output: pdf
+---
+
+
+```{r, include=FALSE}
+library(boot)
+library(Rlab)
+source("simulation_fn.R", local = knitr::knit_global())
+```
+
+```{r}
+regionA <- region(global_params)
+get_ATT(regionA)
+```
+
+
+```{r}
+# Examples
+vary_param_plot(global_params, var_name = "beta.4", var_seq = seq(-.4,.4,.1), nsim = 100)
+```
+
+
+```{r}
+# lognormal
+#a <- rlnorm(100, 1,0)
+# hist(a, breaks = 100, xlim = c(1,4)) 
+curve(dlnorm(x, meanlog=5, sdlog=1), from=0, to=1000)
+```
+
+
