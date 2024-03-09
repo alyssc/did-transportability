@@ -5,35 +5,36 @@ library(simstudy)
 library(furrr)
 
 global_params <- data.frame(theta.P = .2, sigma.P = .01, 
-                            H = 1, sigma.H = .4, b.overall = .14, 
-                            x.baseline = 0)
-
-region_params <- data.frame(
-                            gamma.1=.1, 
-                            gamma.2=.1, 
-                            psi.1=-.1, 
+                            H = .2, sigma.H = .1,
+                            phi.1=0, phi.2=0, 
+                            gamma.3=.1, 
                             psi.2=.1, 
                             beta.1=.1,
                             beta.2=0,
-                            beta.3=.01,
-                            beta.4 = 1, # relationship btwn proportion Black and treatment variable
-                            beta.5 = 0,
-                            beta.6 = 0,
+                            beta.3=0,
+                            beta.4 = .1,
                             alpha.1 = 50, 
-                            alpha.2 = 70,
-                            alpha = .5, beta = .5, # distribution parameters for proportion of Black beneficiaries in practices in CPC+ regions
-                            w = 0, c = .2, m = .1,
-                            meanlog = 5, sdlog = 1, # mean and SD of FFS Medicare population in practices in CPC+ regions
-                            P = 100, # number of practices in a CPC+ region
-                            H.r  = .9 # baseline risk score of Black beneficiaries in a practice in CPC+ regions 
-)
+                            alpha.2 = 70)
+
+get_region_params <- function(id, global_params, in_sample = 0){
+  region_params <- data.frame(
+      region_id = id,
+      S = in_sample,
+      meanlog = 5, sdlog = 1, # mean and SD of FFS Medicare population in practices in CPC+ regions
+      q = in_sample * .05 + (1-in_sample) * .10, # proportion of Black benes in sample vs. population
+      P = 100, # number of practices in a CPC+ region
+      x1.r = in_sample * .1 + (1-in_sample) * .05 # baseline for X1 in sample vs. population
+    )
+  return(region_params)
+}
+
 
 # Generate region parameters
 # Including region_id, S
 
 #' Generate practices within a region
 #' @param params A dataframe of parameters, see global_params for example. 
-make_region <- function(params){
+make_regions <- function(params){
   P <- params$P
   b <- rbeta(P, params$alpha, params$beta)
   n <- round(rlnorm(P, params$meanlog, params$sdlog))
