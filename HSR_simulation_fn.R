@@ -16,6 +16,8 @@ global_params <- data.frame(theta.P = .2, sigma.P = .01,
                             alpha.1 = 50, 
                             alpha.2 = 70)
 
+# Generate region parameters
+# Including region_id, S
 get_region_params <- function(id, global_params, in_sample = 0){
   region_params <- data.frame(
       region_id = id,
@@ -23,18 +25,15 @@ get_region_params <- function(id, global_params, in_sample = 0){
       meanlog = 5, sdlog = 1, # mean and SD of FFS Medicare population in practices in CPC+ regions
       q = in_sample * .05 + (1-in_sample) * .10, # proportion of Black benes in sample vs. population
       P = 100, # number of practices in a CPC+ region
-      x1.r = in_sample * .1 + (1-in_sample) * .05 # baseline for X1 in sample vs. population
+      x1.r = in_sample * .1 + (1-in_sample) * .05, # baseline for X1 in sample vs. population
+      x2.r = in_sample * .1 + (1-in_sample) * .05 # baseline for X1 in sample vs. population
     )
   return(region_params)
 }
 
 
-# Generate region parameters
-# Including region_id, S
-
-#' Generate practices within a region
-#' @param params A dataframe of parameters, see global_params for example. 
-make_regions <- function(params){
+#' Generate simulation of 50 regions and practices
+make_regions <- function(global_params){
   P <- params$P
   b <- rbeta(P, params$alpha, params$beta)
   n <- round(rlnorm(P, params$meanlog, params$sdlog))
