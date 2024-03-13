@@ -7,8 +7,15 @@ output: pdf
 ```{r, include=FALSE}
 library(boot)
 library(Rlab)
-source("simulation_fn.R", local = knitr::knit_global())
 ```
+
+
+```{r}
+source("HSR_simulation_fn.R", local = knitr::knit_global())
+df <- make_regions(global_params)
+df
+```
+
 
 ```{r}
 regionA <- region(global_params)

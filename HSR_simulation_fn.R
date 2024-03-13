@@ -1,20 +1,26 @@
 library(boot)
 library(Rlab)
 library(tidyverse)
-library(simstudy)
-library(furrr)
+# library(simstudy)
+# library(furrr)
 
 global_params <- data.frame(theta.P = .2, sigma.P = .01, 
                             H = .2, sigma.H = .1,
                             phi.1=0, phi.2=0, 
+                            gamma.2 = 0,
                             gamma.3=.1, 
+                            gamma.4 = .1,
                             psi.2=.1, 
+                            beta.0 = 2,
                             beta.1=.1,
                             beta.2=0,
                             beta.3=0,
                             beta.4 = .1,
+                            beta.5 = .1,
                             alpha.1 = 50, 
-                            alpha.2 = 70)
+                            alpha.2 = 70,
+                            alpha.3 = 60
+                            )
 
 # Generate region parameters
 # Including region_id, S
@@ -24,46 +30,88 @@ get_region_params <- function(id, global_params, in_sample = 0){
       S = in_sample,
       meanlog = 5, sdlog = 1, # mean and SD of FFS Medicare population in practices in CPC+ regions
       q = in_sample * .05 + (1-in_sample) * .10, # proportion of Black benes in sample vs. population
-      P = 100, # number of practices in a CPC+ region
+      P = 2, # number of practices in a CPC+ region
       x1.r = in_sample * .1 + (1-in_sample) * .05, # baseline for X1 in sample vs. population
       x2.r = in_sample * .1 + (1-in_sample) * .05 # baseline for X1 in sample vs. population
     )
   return(region_params)
-}
+} 
 
 
-#' Generate simulation of 50 regions and practices
+#' Generate simulation of universe of regions and practices
 make_regions <- function(global_params){
-  P <- params$P
-  b <- rbeta(P, params$alpha, params$beta)
-  n <- round(rlnorm(P, params$meanlog, params$sdlog))
+  n_regions <- 3
+  n_sregions <- 1 # number of CPC+ regions
   
-  H.b0 <- rnorm(P, mean = params$H.r + params$psi.1*b, 
-                sd = params$sigma.H) #pre-period H
-  H.b1 <- rnorm(P, mean = params$H.r + params$psi.1*b + params$psi.2, 
-                sd = params$sigma.H) #post-period H
-  H.w0 <- rnorm(P, mean = H.b0 + params$c, sd = params$sigma.H)
-  H.w1 <- rnorm(P, mean = H.b1 + params$c, sd = params$sigma.H)
+  df <- data.frame(region_id = integer(),
+                   # practice_id added later
+                   b = numeric(),
+                   W = integer(),
+                   U = numeric(),
+                   delta = numeric(),
+                   treated = integer(), 
+                   Yb.pre = numeric(),
+                   Yb.post = numeric(),
+                   Yb.post0 = numeric(),
+                   Yb.post1 = numeric())
+                           
+  # Add practices to dataframe, region by region
+  for(region_id in 1:n_regions){
+    in_sample = 0
+    
+    # Adjust parameters if region is CPC+ region
+    if(region_id <= n_sregions)
+    {
+      in_sample = 1
+    }
+    
+    params <- cbind(global_params, get_region_params(region_id, global_params, in_sample))
+    
+    P <- params$P
+    n <- round(rlnorm(P, params$meanlog, params$sdlog))
+    
+    B <- rbinom(P, n, params$q)
+    b <- B/n
+    
+    X1.prob <- inv.logit(params$x1.r+params$phi.1*b)
+    X1 <- rbern(n=P, prob=X1.prob)
+    X2.prob <- inv.logit(params$x2.r+params$phi.2*b)
+    X2 <- rbern(n=P, prob=X2.prob)
+    W <- 1*(1-X1)*(1-X2) + 2*(1-X1)*X2 + 3*(1-X2)*X1 + 4*X1*X2
+    
+    U.pre <- rnorm(P, mean = params$H, sd = params$sigma.H) #pre-period unobserved H
+    U.post <- rnorm(P, mean = params$H + params$psi.2, sd = params$sigma.H) #post-period unobserved H
+    
+    # make sure at least within range of ATT from JAMA paper
+    delta <- rnorm(P, params$theta.P + params$gamma.2*U.pre + params$gamma.3*X1 + params$gamma.4*X2, sd = params$sigma.P)
+    
+    betas <- c(params$beta.0, params$beta.1, params$beta.2, params$beta.3, params$beta.4, params$beta.5)
+    trt.prob <- inv.logit(betas %*% rbind(1, n, b, U.pre, X1, X2))
+    treated <- rbern(n = P, prob = trt.prob)
+    
+    Yb.pre <- params$alpha.1*U.pre + params$alpha.2 * X1 + params$alpha.3 * X2
+    Yb.post <- params$alpha.1*U.post + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * treated # observed outcome
+    Yb.post0 <- params$alpha.1*U.post + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
+    Yb.post1 <- params$alpha.1*U.post + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
+
+    df <- rbind(df, data.frame(region_id, b, W, U.pre, U.post, delta, treated, Yb.pre, Yb.post, Yb.post0, Yb.post1))
+    
+  }
   
-  # make sure at least within range of ATT from JAMA paper
-  delta.b <- rnorm(P, params$theta.P + params$gamma.1*b + params$gamma.2*H.b0, sd = params$sigma.P)
-  delta.w <- rnorm(P, delta.b + params$m, sd = params$sigma.P)
-  delta <- delta.b * b + delta.w * (1-b)
-  
-  betas <- c(params$beta.1, params$beta.2, params$beta.3, params$beta.4, params$beta.5, params$beta.6)
-  trt.prob <- inv.logit(betas %*% rbind(delta.b, delta.w, n, b, H.b0, H.w0))
-  treated <- rbern(n = P, prob = trt.prob)
-  
-  Yb.pre <- params$alpha.1*H.b0
-  Yw.pre <- params$alpha.2*H.w0
-  Yb.post <- params$alpha.1*H.b1 + delta.b * treated
-  Yw.post <- params$alpha.2*H.w1 + delta.w * treated
-  
-  # Returns generated practice-level attributes, excluding intermediary values like trt.prob
-  return(data.frame(b, n, H.b0, H.b1, H.w0, H.w1, delta.b, delta.w, delta, treated, 
-                    Yb.pre, Yw.pre, Yb.post, Yw.post))
+  df$W <- factor(df$W, levels = c(1:4))
+  return(df)
   
 }
+
+# Displaying parameters
+
+
+
+
+
+
+
+# BELOW ARE DRAFT FUNCTIONS WHICH ARE NOT CURRENTLY CONSISTENT WITH ABOVE NOTATION
 
 #' Get Average Treatment Effect of Treated given a region's practice-level attributes
 #' @param region Region's practice-level attributes from make_region()
@@ -109,4 +157,5 @@ vary_param_plot <- function(default_params,var_name,var_seq,nsim){
   plot(x, y, type="b", xlab=paste("Values of ",var_name), 
        ylab="ATT-ATE for Black patients")
 }
+
 
