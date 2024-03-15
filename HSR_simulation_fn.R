@@ -104,6 +104,37 @@ make_regions <- function(global_params){
   
 }
 
+
+# Estimation
+
+df <- make_regions(global_params)
+head(df)
+length(df)
+
+## True PATT 
+I10 = 1*( df$T==1 & df$S==0  )
+mean(I10*(df$Yb.post1 - df$Yb.post0))
+
+## G comp
+
+m <- lm(Yb.post-Yb.pre ~ W*T*S, data = df)
+
+m0 <- predict(m, newdata=df %>% mutate(T=0,S=1))
+m1 <- predict(m, newdata=df %>% mutate(T=1,S=1))
+
+p10 = mean(     df$T*(1-df$S)  )
+I10 = 1*( df$T==1 & df$S==0  )
+gcomp = mean( I10*(m1 - m0)/p10 )
+gcomp
+
+## IPW
+
+
+
+## DR
+
+
+
 # Displaying parameters
 
 
