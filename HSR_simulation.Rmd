@@ -1,32 +1,55 @@
 ---
-title: "CPC+ Simulation"
-output: pdf
+title: "Data Generating Mechanism Testing"
+output: pdf_document
 ---
 
+Below are graphs of the distributions of parameters, to be adjusted to fit with reality. 
 
 ```{r, include=FALSE}
 library(boot)
 library(Rlab)
-```
-
-
-```{r}
 source("HSR_simulation_fn.R", local = knitr::knit_global())
+```
+
+
+```{r}
 df <- make_regions(global_params)
-df
+head(df)
+length(df)
+```
+
+Estimator (G-Comp):
+
+```{r}
+# Need to discuss how to model
+m <- lm(Yb.post-Yb.pre ~ W*T*S, data = df)
+
+m0 <- predict(m, newdata=df %>% mutate(T=0,S=1))
+m1 <- predict(m, newdata=df %>% mutate(T=1,S=1))
+
+p10 = mean(     df$T*(1-df$S)  )
+I10 = 1*( df$T==1 & df$S==0  )
+gcomp = mean( I10*(m1 - m0)/p10 )
+gcomp
+```
+
+```{r}
+mean(I10*(df$Yb.post1 - df$Yb.post0))
 ```
 
 
 ```{r}
-regionA <- region(global_params)
-get_ATT(regionA)
+par(mfrow=c(3,2))
+hist(df[df$S==1,]$b, main = "Hist of b, CPC+ regions")
+hist(df[df$S==0,]$b, main = "Hist of b, non-CPC+ regions")
+
+barplot(table(df[df$S==1,]$W), main = "W in CPC+ regions")
+barplot(table(df[df$S==0,]$W), main = "W in non-CPC+ regions")
+
+barplot(table(df[df$S==1,]$T), main = "T in CPC+ regions")
+barplot(table(df[df$S==0,]$T), main = "T in non-CPC+ regions")
 ```
 
-
-```{r}
-# Examples
-vary_param_plot(global_params, var_name = "beta.4", var_seq = seq(-.4,.4,.1), nsim = 100)
-```
 
 
 ```{r}

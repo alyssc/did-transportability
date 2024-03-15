@@ -1,15 +1,13 @@
 library(boot)
 library(Rlab)
 library(tidyverse)
-# library(simstudy)
-# library(furrr)
 
 global_params <- data.frame(theta.P = .2, sigma.P = .01, 
                             H = .2, sigma.H = .1,
                             phi.1=0, phi.2=0, 
                             gamma.2 = 0,
                             gamma.3=.1, 
-                            gamma.4 = .1,
+                            gamma.4 = .1, 
                             psi.2=.1, 
                             beta.0 = 2,
                             beta.1=.1,
@@ -30,7 +28,7 @@ get_region_params <- function(id, global_params, in_sample = 0){
       S = in_sample,
       meanlog = 5, sdlog = 1, # mean and SD of FFS Medicare population in practices in CPC+ regions
       q = in_sample * .05 + (1-in_sample) * .10, # proportion of Black benes in sample vs. population
-      P = 2, # number of practices in a CPC+ region
+      P = 50, # number of practices in a CPC+ region
       x1.r = in_sample * .1 + (1-in_sample) * .05, # baseline for X1 in sample vs. population
       x2.r = in_sample * .1 + (1-in_sample) * .05 # baseline for X1 in sample vs. population
     )
@@ -40,10 +38,11 @@ get_region_params <- function(id, global_params, in_sample = 0){
 
 #' Generate simulation of universe of regions and practices
 make_regions <- function(global_params){
-  n_regions <- 3
-  n_sregions <- 1 # number of CPC+ regions
+  n_regions <- 50
+  n_sregions <- 18 # number of CPC+ regions
   
   df <- data.frame(region_id = integer(),
+                   S = integer(),
                    # practice_id added later
                    b = numeric(),
                    W = integer(),
@@ -94,11 +93,13 @@ make_regions <- function(global_params){
     Yb.post0 <- params$alpha.1*U.post + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
     Yb.post1 <- params$alpha.1*U.post + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
 
-    df <- rbind(df, data.frame(region_id, b, W, U.pre, U.post, delta, treated, Yb.pre, Yb.post, Yb.post0, Yb.post1))
+    df <- rbind(df, data.frame(region_id, in_sample, b, W, U.pre, U.post, delta, treated, Yb.pre, Yb.post, Yb.post0, Yb.post1))
     
   }
   
   df$W <- factor(df$W, levels = c(1:4))
+  colnames(df)[2] <- "S"
+  colnames(df)[8] <- "T"
   return(df)
   
 }
