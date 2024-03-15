@@ -111,9 +111,6 @@ df <- make_regions(global_params)
 head(df)
 length(df)
 
-## True PATT 
-I10 = 1*( df$T==1 & df$S==0  )
-mean(I10*(df$Yb.post1 - df$Yb.post0))
 
 ## G comp
 
@@ -122,18 +119,37 @@ m <- lm(Yb.post-Yb.pre ~ W*T*S, data = df)
 m0 <- predict(m, newdata=df %>% mutate(T=0,S=1))
 m1 <- predict(m, newdata=df %>% mutate(T=1,S=1))
 
-p10 = mean(     df$T*(1-df$S)  )
-I10 = 1*( df$T==1 & df$S==0  )
-gcomp = mean( I10*(m1 - m0)/p10 )
+I10 = 1*(df$T==1 & df$S==0)
+p10 = mean(df$T*(1-df$S))
+
+gcomp = mean(I10*(m1-m0)/p10)
 gcomp
 
 ## IPW
 
+I11 = 1*(df$T==1 & df$S==1)
+I01 = 1*(df$T==0 & df$S==1)
 
+gT <- lm(T ~ W*S, data = df)
+gS <- lm(S ~ W, data = df)
+
+g11 <- predict(gT, newdata=df %>% mutate(S=1)) * predict(gS, newdata=df)
+g01 <- (1-predict(gT, newdata=df %>% mutate(S=1))) * predict(gS, newdata=df)
+g10 <- predict(gT, newdata=df %>% mutate(S=0)) * (1-predict(gS, newdata=df))
+
+ipw <- mean(I11*g10*(df$Yb.post-df$Yb.pre)/(p10*g11) -
+               I01*g10*(df$Yb.post-df$Yb.pre)/(p10*g01))
+ipw
 
 ## DR
 
+dr <- mean(I11*g10*((df$Yb.post-df$Yb.pre) - m1)/(p10*g11) -
+  I01*g10*((df$Yb.post-df$Yb.pre) - m0)/(p10*g01) +
+  I10*(m1 - m0)/p10)
+dr
 
+## True PATT 
+mean(I10*(df$Yb.post1 - df$Yb.post0))
 
 # Displaying parameters
 
