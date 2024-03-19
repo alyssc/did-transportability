@@ -2,6 +2,10 @@ library(boot)
 library(Rlab)
 library(tidyverse)
 
+# Defining parameters and functions for simulation study
+
+## DATA GENERATING MECHANISMS ##
+
 global_params <- data.frame(theta.P = .2, sigma.P = .01, 
                             H = .2, sigma.H = .1,
                             phi.1=0, phi.2=0, 
@@ -104,54 +108,49 @@ make_regions <- function(global_params){
   
 }
 
-
-# Estimation
-
-df <- make_regions(global_params)
-head(df)
-length(df)
+## Displaying parameters
 
 
-## G comp
+## ESTIMATION ##
 
-m <- lm(Yb.post-Yb.pre ~ W*T*S, data = df)
 
-m0 <- predict(m, newdata=df %>% mutate(T=0,S=1))
-m1 <- predict(m, newdata=df %>% mutate(T=1,S=1))
-
-I10 = 1*(df$T==1 & df$S==0)
-p10 = mean(df$T*(1-df$S))
-
-gcomp = mean(I10*(m1-m0)/p10)
-gcomp
-
-## IPW
-
-I11 = 1*(df$T==1 & df$S==1)
-I01 = 1*(df$T==0 & df$S==1)
-
-gT <- lm(T ~ W*S, data = df)
-gS <- lm(S ~ W, data = df)
-
-g11 <- predict(gT, newdata=df %>% mutate(S=1)) * predict(gS, newdata=df)
-g01 <- (1-predict(gT, newdata=df %>% mutate(S=1))) * predict(gS, newdata=df)
-g10 <- predict(gT, newdata=df %>% mutate(S=0)) * (1-predict(gS, newdata=df))
-
-ipw <- mean(I11*g10*(df$Yb.post-df$Yb.pre)/(p10*g11) -
-               I01*g10*(df$Yb.post-df$Yb.pre)/(p10*g01))
-ipw
-
-## DR
-
-dr <- mean(I11*g10*((df$Yb.post-df$Yb.pre) - m1)/(p10*g11) -
-  I01*g10*((df$Yb.post-df$Yb.pre) - m0)/(p10*g01) +
-  I10*(m1 - m0)/p10)
-dr
+## Returns vector of three estimates from G comp, IPW, DR estimators
+estimate_patt <- function(df){
+  m <- lm(Yb.post-Yb.pre ~ W*T*S, data = df)
+  m0 <- predict(m, newdata=df %>% mutate(T=0,S=1))
+  m1 <- predict(m, newdata=df %>% mutate(T=1,S=1))
+  
+  I10 = 1*(df$T==1 & df$S==0)
+  I11 = 1*(df$T==1 & df$S==1)
+  I01 = 1*(df$T==0 & df$S==1)
+  
+  p10 = mean(df$T*(1-df$S))
+  
+  gT <- lm(T ~ W*S, data = df)
+  gS <- lm(S ~ W, data = df)
+  
+  g11 <- predict(gT, newdata=df %>% mutate(S=1)) * predict(gS, newdata=df)
+  g01 <- (1-predict(gT, newdata=df %>% mutate(S=1))) * predict(gS, newdata=df)
+  g10 <- predict(gT, newdata=df %>% mutate(S=0)) * (1-predict(gS, newdata=df))
+  
+  gcomp.val <- mean(I10*(m1-m0)/p10)
+  ipw.val <- mean(I11*g10*(df$Yb.post-df$Yb.pre)/(p10*g11) -
+                I01*g10*(df$Yb.post-df$Yb.pre)/(p10*g01))
+  dr.val <- mean(I11*g10*((df$Yb.post-df$Yb.pre) - m1)/(p10*g11) -
+               I01*g10*((df$Yb.post-df$Yb.pre) - m0)/(p10*g01) +
+               I10*(m1 - m0)/p10)
+  
+  return(c(gcomp.val, ipw.val, dr.val))
+}
 
 ## True PATT 
-mean(I10*(df$Yb.post1 - df$Yb.post0))
+true_patt <- function(df){
+  I10 = 1*(df$T==1 & df$S==0)
+  return(mean(I10*(df$Yb.post1 - df$Yb.post0)))
+}
 
-# Displaying parameters
+
+## In-sample DiD
 
 
 

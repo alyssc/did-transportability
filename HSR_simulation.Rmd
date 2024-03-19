@@ -18,6 +18,12 @@ head(df)
 length(df)
 ```
 
+```{r}
+estimate_patt(df)
+true_patt(df)
+```
+
+
 Estimator (G-Comp):
 
 ```{r}
