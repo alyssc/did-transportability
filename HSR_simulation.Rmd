@@ -75,34 +75,18 @@ knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation (in SSP, 
 Diff-in-diff code
 
 ```{r}
-df_long <- gather(df, time, Y, Yb.pre:Yb.post)
-df_long$time[df_long$time=="Yb.pre"] <- 0
-df_long$time[df_long$time=="Yb.post"] <- 1
-
-lm.1 <- lm(Y ~ A + time + A * time + 
-                  X1+X2,
-                data = df_long %>% filter(S==1) )
+lm.1 <- lm.did(df,plot=T)
 
 # Effect of CPC+ participation on expenditures
 lm.1$coefficients["A"]
 ```
 
 ```{r, warning = F}
-# Plotting DiD; code adapted from https://rpubs.com/andrewheiss/did
-
-plot_data <- df_long %>% 
-  mutate(A = factor(A, labels = c("non-CPC+ participant", "CPC+ participant")),
-         time = factor(time, labels = c("Pre-period", "Post-period"))) %>% 
-  group_by(A, time) %>% 
-  summarize(mean_Y = mean(Y),
-            se_Y = sd(Y) / sqrt(n()),
-            upper = mean_Y + (-1.96 * se_Y),
-            lower = mean_Y + (1.96 * se_Y)) 
-
-ggplot(plot_data, aes(x = time, y = mean_Y, color = A)) +
-  geom_pointrange(aes(ymin = lower, ymax = upper), size = 1) + 
-  geom_line(aes(group = A))
+plot.did(df)
 ```
+
+
+
 
 
 ```{r,include=F}

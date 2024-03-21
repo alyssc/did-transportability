@@ -151,7 +151,34 @@ true_patt <- function(df){
 
 
 ## In-sample DiD
+lm.did <- function(df, plot = F){
+  df_long <- gather(df, time, Y, Yb.pre:Yb.post)
+  df_long$time[df_long$time=="Yb.pre"] <- 0
+  df_long$time[df_long$time=="Yb.post"] <- 1
+  
+  lm.1 <- lm(Y ~ A + time + A * time + 
+                   X1+X2, data = df_long %>% filter(S==1) )
+  return(lm.1)
+}
 
+plot.did <- function(df){
+  df_long <- gather(df, time, Y, Yb.pre:Yb.post)
+  df_long$time[df_long$time=="Yb.pre"] <- 0
+  df_long$time[df_long$time=="Yb.post"] <- 1
+  
+  plot_data <- df_long %>% 
+    mutate(A = factor(A, labels = c("non-CPC+ participant", "CPC+ participant")),
+           time = factor(time, labels = c("Pre-period", "Post-period"))) %>% 
+    group_by(A,time) %>% 
+    summarize(mean_Y = mean(Y),
+              se_Y = sd(Y) / sqrt(n()),
+              upper = mean_Y + (-1.96 * se_Y),
+              lower = mean_Y + (1.96 * se_Y)) 
+  
+  return(ggplot(plot_data, aes(x = time, y = mean_Y, color = A)) +
+    geom_pointrange(aes(ymin = lower, ymax = upper), size = 1) + 
+    geom_line(aes(group = A)))
+}
 
 
 
