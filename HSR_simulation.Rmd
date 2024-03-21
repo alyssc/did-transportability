@@ -60,9 +60,11 @@ barplot(table(df[df$S==0,]$T), main = "T in non-CPC+ regions")
 
 ```{r}
 # lognormal
-#a <- rlnorm(100, 1,0)
+a <- rlnorm(1000, 1,.1)
+mean(a)
+var(a)
 # hist(a, breaks = 100, xlim = c(1,4)) 
-curve(dlnorm(x, meanlog=5, sdlog=1), from=0, to=1000)
+#curve(dlnorm(x, meanlog=5, sdlog=1), from=0, to=1000)
 ```
 
 

@@ -8,11 +8,13 @@ library(tidyverse)
 
 global_params <- data.frame(theta.P = .2, sigma.P = .01, 
                             H = .2, sigma.H = .1,
-                            phi.1=0, phi.2=0, 
+                            x1.r = -.49, 
+                            x2.r = -.5,
+                            phi.1=.14, phi.2=.16, 
                             gamma.2 = 0,
                             gamma.3=.1, 
                             gamma.4 = .1, 
-                            psi.2=.1, 
+                            psi.1=.1, 
                             beta.0 = 2,
                             beta.1=.1,
                             beta.2=0,
@@ -21,7 +23,13 @@ global_params <- data.frame(theta.P = .2, sigma.P = .01,
                             beta.5 = .1,
                             alpha.1 = 50, 
                             alpha.2 = 70,
-                            alpha.3 = 60
+                            alpha.3 = 60,
+                            om.1= .1,
+                            om.2= .1,
+                            om.3= -.13,
+                            q= -.92,
+                            P= 10 # number of practices in a region
+                            
                             )
 
 # Generate region parameters
@@ -29,12 +37,7 @@ global_params <- data.frame(theta.P = .2, sigma.P = .01,
 get_region_params <- function(id, global_params, in_sample = 0){
   region_params <- data.frame(
       region_id = id,
-      S = in_sample,
-      meanlog = 5, sdlog = 1, # mean and SD of FFS Medicare population in practices in CPC+ regions
-      q = in_sample * .05 + (1-in_sample) * .10, # proportion of Black benes in sample vs. population
-      P = 50, # number of practices in a CPC+ region
-      x1.r = in_sample * .1 + (1-in_sample) * .05, # baseline for X1 in sample vs. population
-      x2.r = in_sample * .1 + (1-in_sample) * .05 # baseline for X1 in sample vs. population
+      S = in_sample
     )
   return(region_params)
 } 
@@ -52,7 +55,7 @@ make_regions <- function(global_params){
                    W = integer(),
                    U = numeric(),
                    delta = numeric(),
-                   treated = integer(), 
+                   A = integer(), 
                    Yb.pre = numeric(),
                    Yb.post = numeric(),
                    Yb.post0 = numeric(),
@@ -60,55 +63,54 @@ make_regions <- function(global_params){
                            
   # Add practices to dataframe, region by region
   for(region_id in 1:n_regions){
-    in_sample = 0
+    S = 0
     
     # Adjust parameters if region is CPC+ region
     if(region_id <= n_sregions)
     {
-      in_sample = 1
+      S = 1
     }
     
-    params <- cbind(global_params, get_region_params(region_id, global_params, in_sample))
+    params <- cbind(global_params, get_region_params(region_id, global_params, S))
     
     P <- params$P
-    n <- round(rlnorm(P, params$meanlog, params$sdlog))
+    n <- rbinom(P, 1000, .3) #patients in practices
     
-    B <- rbinom(P, n, params$q)
-    b <- B/n
-    
-    X1.prob <- inv.logit(params$x1.r+params$phi.1*b)
-    X1 <- rbern(n=P, prob=X1.prob)
-    X2.prob <- inv.logit(params$x2.r+params$phi.2*b)
-    X2 <- rbern(n=P, prob=X2.prob)
+    X1 <- rbern(n=P, prob=inv.logit(params$x1.r+params$phi.1*S) )
+    X2 <- rbern(n=P, prob=inv.logit(params$x2.r+params$phi.2*S) )
     W <- 1*(1-X1)*(1-X2) + 2*(1-X1)*X2 + 3*(1-X2)*X1 + 4*X1*X2
     
-    U.pre <- rnorm(P, mean = params$H, sd = params$sigma.H) #pre-period unobserved H
-    U.post <- rnorm(P, mean = params$H + params$psi.2, sd = params$sigma.H) #post-period unobserved H
+    B <- rbinom(P, n, inv.logit(params$q + params$om.1*X1 + params$om.2*X2 + params$om.3*S))
+    b <- B/n
+    
+    U <- rnorm(P, mean = params$H, sd = params$sigma.H + params$psi.1*S) # unobserved H
+    # U.post <- rnorm(P, mean = params$H + params$psi.2, sd = params$sigma.H) #post-period unobserved H
     
     # make sure at least within range of ATT from JAMA paper
-    delta <- rnorm(P, params$theta.P + params$gamma.2*U.pre + params$gamma.3*X1 + params$gamma.4*X2, sd = params$sigma.P)
+    delta <- rnorm(P, params$theta.P + params$gamma.2*U + params$gamma.3*X1 + params$gamma.4*X2, sd = params$sigma.P)
     
     betas <- c(params$beta.0, params$beta.1, params$beta.2, params$beta.3, params$beta.4, params$beta.5)
-    trt.prob <- inv.logit(betas %*% rbind(1, n, b, U.pre, X1, X2))
-    treated <- rbern(n = P, prob = trt.prob)
+    trt.prob <- inv.logit(betas %*% rbind(1, n, b, U, X1, X2))
+    A <- rbern(n = P, prob = trt.prob)
     
-    Yb.pre <- params$alpha.1*U.pre + params$alpha.2 * X1 + params$alpha.3 * X2
-    Yb.post <- params$alpha.1*U.post + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * treated # observed outcome
-    Yb.post0 <- params$alpha.1*U.post + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
-    Yb.post1 <- params$alpha.1*U.post + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
+    Yb.pre <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2
+    Yb.post <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * A # observed outcome
+    Yb.post0 <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
+    Yb.post1 <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
 
-    df <- rbind(df, data.frame(region_id, in_sample, b, W, U.pre, U.post, delta, treated, Yb.pre, Yb.post, Yb.post0, Yb.post1))
+    df <- rbind(df, data.frame(region_id, S, b, W, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
     
   }
   
   df$W <- factor(df$W, levels = c(1:4))
   colnames(df)[2] <- "S"
-  colnames(df)[8] <- "T"
   return(df)
   
 }
 
-## Displaying parameters
+## Displaying and testing parameters
+# In the form of P(B=1 | S=1) etc. 
+
 
 
 ## ESTIMATION ##
@@ -116,17 +118,17 @@ make_regions <- function(global_params){
 
 ## Returns vector of three estimates from G comp, IPW, DR estimators
 estimate_patt <- function(df){
-  m <- lm(Yb.post-Yb.pre ~ W*T*S, data = df)
-  m0 <- predict(m, newdata=df %>% mutate(T=0,S=1))
-  m1 <- predict(m, newdata=df %>% mutate(T=1,S=1))
+  m <- lm(Yb.post-Yb.pre ~ W*A*S, data = df)
+  m0 <- predict(m, newdata=df %>% mutate(A=0,S=1))
+  m1 <- predict(m, newdata=df %>% mutate(A=1,S=1))
   
-  I10 = 1*(df$T==1 & df$S==0)
-  I11 = 1*(df$T==1 & df$S==1)
-  I01 = 1*(df$T==0 & df$S==1)
+  I10 = 1*(df$A==1 & df$S==0)
+  I11 = 1*(df$A==1 & df$S==1)
+  I01 = 1*(df$A==0 & df$S==1)
   
-  p10 = mean(df$T*(1-df$S))
+  p10 = mean(df$A*(1-df$S))
   
-  gT <- lm(T ~ W*S, data = df)
+  gT <- lm(A ~ W*S, data = df)
   gS <- lm(S ~ W, data = df)
   
   g11 <- predict(gT, newdata=df %>% mutate(S=1)) * predict(gS, newdata=df)
