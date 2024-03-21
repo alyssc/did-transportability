@@ -28,7 +28,7 @@ global_params <- data.frame(theta.P = .2, sigma.P = .01,
                             om.2= .1,
                             om.3= -.13,
                             q= -.92,
-                            P= 10 # number of practices in a region
+                            P= 1000 # number of practices in a region
                             
                             )
 
@@ -85,7 +85,7 @@ make_regions <- function(global_params){
     B <- rbinom(P, n, inv.logit(params$q + params$om.1*X1 + params$om.2*X2 + params$om.3*S))
     b <- B/n
     
-    U <- rnorm(P, mean = params$H, sd = params$sigma.H + params$psi.1*S) # unobserved H
+    U <- rnorm(P, mean = params$H + params$psi.1*S, sd = params$sigma.H) # unobserved H
     # U.post <- rnorm(P, mean = params$H + params$psi.2, sd = params$sigma.H) #post-period unobserved H
     
     # make sure at least within range of ATT from JAMA paper
@@ -109,10 +109,6 @@ make_regions <- function(global_params){
   return(df)
   
 }
-
-## Displaying and testing parameters
-# In the form of P(B=1 | S=1) etc. 
-
 
 
 ## ESTIMATION ##
