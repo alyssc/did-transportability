@@ -7,20 +7,20 @@ library(tidyverse)
 ## DATA GENERATING MECHANISMS ##
 
 global_params <- data.frame(theta.P = .2, sigma.P = .01, 
-                            H = .2, sigma.H = .1,
+                            H = 1, sigma.H = .1,
                             x1.r = -.49, 
                             x2.r = -.5,
                             phi.1=.14, phi.2=.16, 
-                            gamma.2 = 0,
                             gamma.3=.1, 
                             gamma.4 = .1, 
                             psi.1=.1, 
-                            beta.0 = 2,
-                            beta.1=.1,
-                            beta.2=0,
+                            beta.0 = -1.38,
+                            #beta.1=0,
+                            #beta.2=0,
                             beta.3=0,
-                            beta.4 = .1,
-                            beta.5 = .1,
+                            beta.4 = 0,
+                            beta.5 = 0,
+                            beta.6 = 0, 
                             alpha.1 = 50, 
                             alpha.2 = 70,
                             alpha.3 = 60,
@@ -53,6 +53,8 @@ make_regions <- function(global_params){
                    # practice_id added later
                    b = numeric(),
                    W = integer(),
+                   X1 = integer(),
+                   X2 = integer(),
                    U = numeric(),
                    delta = numeric(),
                    A = integer(), 
@@ -74,7 +76,7 @@ make_regions <- function(global_params){
     params <- cbind(global_params, get_region_params(region_id, global_params, S))
     
     P <- params$P
-    n <- rbinom(P, 1000, .3) #patients in practices
+    n <- rbinom(P, 1200, .25) #patients in practices
     
     X1 <- rbern(n=P, prob=inv.logit(params$x1.r+params$phi.1*S) )
     X2 <- rbern(n=P, prob=inv.logit(params$x2.r+params$phi.2*S) )
@@ -87,10 +89,10 @@ make_regions <- function(global_params){
     # U.post <- rnorm(P, mean = params$H + params$psi.2, sd = params$sigma.H) #post-period unobserved H
     
     # make sure at least within range of ATT from JAMA paper
-    delta <- rnorm(P, params$theta.P + params$gamma.2*U + params$gamma.3*X1 + params$gamma.4*X2, sd = params$sigma.P)
+    delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2, sd = params$sigma.P)
     
-    betas <- c(params$beta.0, params$beta.1, params$beta.2, params$beta.3, params$beta.4, params$beta.5)
-    trt.prob <- inv.logit(betas %*% rbind(1, n, b, U, X1, X2))
+    betas <- c(params$beta.0, params$beta.3, params$beta.4, params$beta.5, params$beta.6)
+    trt.prob <- inv.logit(betas %*% rbind(1, U, X1, X2, S))
     A <- rbern(n = P, prob = trt.prob)
     
     Yb.pre <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2
@@ -98,7 +100,7 @@ make_regions <- function(global_params){
     Yb.post0 <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
     Yb.post1 <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
 
-    df <- rbind(df, data.frame(region_id, S, b, W, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
+    df <- rbind(df, data.frame(region_id, S, b, W,X1,X2, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
     
   }
   
@@ -147,7 +149,7 @@ estimate_patt <- function(df){
 
 ## True PATT 
 true_patt <- function(df){
-  I10 = 1*(df$T==1 & df$S==0)
+  I10 = 1*(df$A==1 & df$S==0)
   return(mean(I10*(df$Yb.post1 - df$Yb.post0)))
 }
 

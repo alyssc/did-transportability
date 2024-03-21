@@ -3,68 +3,80 @@ title: "Data Generating Mechanism Testing"
 output: pdf_document
 ---
 
-Below are graphs of the distributions of parameters, to be adjusted to fit with reality. 
 
 ```{r, include=FALSE}
 library(boot)
 library(Rlab)
 source("HSR_simulation_fn.R", local = knitr::knit_global())
+options(digits=3)
 ```
 
+We create a single instantiation of the simulation in this block: 
 
 ```{r}
 df <- make_regions(global_params)
-head(df)
-length(df)
+head(df, 2)
+dim(df)
+df <- tibble::as_tibble(df)
 ```
+
+Here, I test our ability to estimate the PATT (using 3 estimators) and also calculate the true PATT: 
 
 ```{r}
 estimate_patt(df)
 true_patt(df)
 ```
 
+Below, I print out simulated results of probabilities we have from the literature that we can use to help calibrate our parameters. 
 
-Estimator (G-Comp):
+```{r, echo=F}
+# Parameter calibration
 
-```{r}
-# Need to discuss how to model
-m <- lm(Yb.post-Yb.pre ~ W*T*S, data = df)
+# Proportion Black benes, SSP, system, and treated in CPC+ and non-CPC+ regions
+attributes_by_S <- df %>% 
+  group_by(S) %>% 
+  summarise("P(B=1 | S)" = mean(b),
+            "P(SSP | S)" = mean(X1),
+            "P(system | S)" = mean(X2),
+            "P(A | S)" = mean(A)
+            ) 
 
-m0 <- predict(m, newdata=df %>% mutate(T=0,S=1))
-m1 <- predict(m, newdata=df %>% mutate(T=1,S=1))
+# proportion Black in CPC+ and non-CPC+ participants within CPC+ regions
+race_by_participation <- df %>% 
+  filter(S==1) %>% 
+  group_by(A) %>%
+  summarise("P(B=1 | S=1,A)" = mean(b)
+            ) 
 
-p10 = mean(     df$T*(1-df$S)  )
-I10 = 1*( df$T==1 & df$S==0  )
-gcomp = mean( I10*(m1 - m0)/p10 )
-gcomp
+# Proportion treated in SSP, in system, and overall
+prop_treated <- bind_cols(
+  (
+    df %>% 
+      filter(S==1,X1==1) %>% 
+      summarise(prop_SSP_treated = mean(A)) ),
+  (
+    df %>% 
+      filter(S==1,X2==1) %>% 
+      summarise(prop_sys_treated = mean(A)) ),
+  (
+    df %>% summarise(prop_treated = mean(A))
+  )
+  ) %>% 
+  `colnames<-`(c("P(A=1 | SSP=1, S=1)", "P(A=1 | sys=1, S=1)", "P(A=1)"))
+
+knitr::kable(attributes_by_S, caption = "B, SSP, System, and A by CPC+ or non-CPC+ region")
+knitr::kable(race_by_participation, caption = "Race by CPC+ Participation")
+knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation (in SSP, System, and Overall)")
+
 ```
 
-```{r}
-mean(I10*(df$Yb.post1 - df$Yb.post0))
-```
 
 
-```{r}
-par(mfrow=c(3,2))
+```{r,include=F}
+# Drafting parameter test graphs (TO-DO: overlay on one graph)
+par(mfrow=c(1,2))
 hist(df[df$S==1,]$b, main = "Hist of b, CPC+ regions")
 hist(df[df$S==0,]$b, main = "Hist of b, non-CPC+ regions")
 
-barplot(table(df[df$S==1,]$W), main = "W in CPC+ regions")
-barplot(table(df[df$S==0,]$W), main = "W in non-CPC+ regions")
-
-barplot(table(df[df$S==1,]$T), main = "T in CPC+ regions")
-barplot(table(df[df$S==0,]$T), main = "T in non-CPC+ regions")
 ```
-
-
-
-```{r}
-# lognormal
-a <- rlnorm(1000, 1,.1)
-mean(a)
-var(a)
-# hist(a, breaks = 100, xlim = c(1,4)) 
-#curve(dlnorm(x, meanlog=5, sdlog=1), from=0, to=1000)
-```
-
 
