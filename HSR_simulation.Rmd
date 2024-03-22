@@ -7,13 +7,13 @@ output: pdf_document
 ```{r, include=FALSE}
 library(boot)
 library(Rlab)
-source("HSR_simulation_fn.R", local = knitr::knit_global())
 options(digits=3)
 ```
 
 We create a single instantiation of the simulation in this block: 
 
 ```{r}
+source("HSR_simulation_fn.R", local = knitr::knit_global())
 df <- make_regions(global_params)
 head(df, 2)
 dim(df)
@@ -72,7 +72,7 @@ knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation (in SSP, 
 ```
 
 
-Diff-in-diff code
+Running diff-in-diff in-sample: 
 
 ```{r}
 lm.1 <- lm.did(df,plot=T)
@@ -86,6 +86,17 @@ plot.did(df)
 ```
 
 
+
+```{r}
+df %>% 
+  ggplot( aes(x=U, color=factor(S, levels = c("0","1")),fill=factor(S, levels = c("0","1")))) + 
+  geom_density(alpha=.3)
+
+```
+```{r}
+results <- sim_plot_patt(global_params,"psi.1",c(-.1,0,.1),nsim=5)
+plot_patt(results, var_name = "psi.1")
+```
 
 
 

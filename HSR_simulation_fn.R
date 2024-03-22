@@ -1,13 +1,14 @@
 library(boot)
 library(Rlab)
 library(tidyverse)
+library("reshape2") 
 
 # Defining parameters and functions for simulation study
 
 ## DATA GENERATING MECHANISMS ##
 
 global_params <- data.frame(theta.P = .2, sigma.P = .01, 
-                            H = 1, sigma.H = .1,
+                            H = 0, sigma.H = .02,
                             x1.r = -.49, 
                             x2.r = -.5,
                             phi.1=.14, phi.2=.16, 
@@ -28,7 +29,7 @@ global_params <- data.frame(theta.P = .2, sigma.P = .01,
                             om.2= .1,
                             om.3= -.13,
                             q= -.92,
-                            P= 1000 # number of practices in a region
+                            P= 50 # number of practices in a region
                             
                             )
 
@@ -161,6 +162,7 @@ lm.did <- function(df, plot = F){
   return(lm.1)
 }
 
+# Plot in-sample DiD
 plot.did <- function(df){
   df_long <- gather(df, time, Y, Yb.pre:Yb.post)
   df_long$time[df_long$time=="Yb.pre"] <- 0
@@ -181,55 +183,36 @@ plot.did <- function(df){
 }
 
 
-
-
-
-
-# BELOW ARE DRAFT FUNCTIONS WHICH ARE NOT CURRENTLY CONSISTENT WITH ABOVE NOTATION
-
-#' Get Average Treatment Effect of Treated given a region's practice-level attributes
-#' @param region Region's practice-level attributes from make_region()
-#' @param type "t", "b", or "w" for total ATT, ATT for black beneficiaries, and ATT for white beneficiaries
-get_ATT <- function(region, type = "t"){
-  if(type == "t"){
-    return(mean(region$delta[region$treated == 1]))
-  } else if(type == "b"){
-    return(mean(region$delta.b[region$treated == 1]))
-  } else if(type == "w"){
-    return(mean(region$delta.w[region$treated == 1]))
-  }
-}
-
-get_ATE <- function(region, type = "t"){
-  if(type == "t"){
-    return(mean(region$delta))
-  } else if(type == "b"){
-    return(mean(region$delta.b))
-  } else if(type == "w"){
-    return(mean(region$delta.w))
-  }
-}
-
-# Plot ATT.B - ATE.B across variation of a single parameter
-vary_param_plot <- function(default_params,var_name,var_seq,nsim){
+# Calculate stimated and true PATT across variation of a single parameter
+sim_patt <- function(default_params,var_name,var_seq,nsim){
   x <- var_seq
-  y <- rep(NA, length(x))
+  results <- matrix(NA,nrow = 0, ncol = 5)
   
   for (i in 1:length(x)){
     default_params[var_name] <- x[i]
-    y_singlesims <- rep(NA, nsim)
+    y_singlesims <- matrix(NA,nrow = 0, ncol = 5)
     
     for (j in 1:nsim){
-      region <- make_region(default_params)
-      y_singlesims[j] <- get_ATT(region,"b") - get_ATE(region,"b")
+      
+      df <- make_regions(default_params)
+      y_singlesims <- rbind(y_singlesims, c(x[i],true_patt(df),estimate_patt(df)))
     }
     
-    y[i] <- mean(y_singlesims)
+    results <- rbind(results, colMeans(y_singlesims))
     
   }
-  
-  plot(x, y, type="b", xlab=paste("Values of ",var_name), 
-       ylab="ATT-ATE for Black patients")
+  results <- as.data.frame(results)
+  colnames(results) <- c("psi.1","true", "gcomp", "ipw", "dr")
+  return(results)
 }
 
+# Plots the results of sim_patt
+plot_patt <- function(results, var_name){
+  results_long <- melt(results, id = var_name) 
+  plot_patt <- ggplot(results_long,             
+                      aes(x = get(var_name), 
+                          y = value, 
+                          color = variable)) +  geom_line() 
+  return(plot_patt)
+}
 
