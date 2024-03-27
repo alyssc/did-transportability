@@ -98,6 +98,13 @@ results <- sim_plot_patt(global_params,"psi.1",c(-.1,0,.1),nsim=5)
 plot_patt(results, var_name = "psi.1")
 ```
 
+```{r}
+p <- c( .1)
+log(p/(1-p))
+
+q <- c(0.15) 
+log( (p*(1-q))/(q*(1-p)) )
+```
 
 
 ```{r,include=F}

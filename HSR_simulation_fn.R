@@ -7,28 +7,37 @@ library("reshape2")
 
 ## DATA GENERATING MECHANISMS ##
 
-global_params <- data.frame(theta.P = .2, sigma.P = .01, 
+global_params <- data.frame(
+                            x1.r = -.6, 
+                            x2.r = -.7,
+                            phi.1=.17, phi.2=.04, 
+                            
+                            q= -2.12,
+                            om.1= .1,
+                            om.2= .6,
+                            om.3= .3,
+                            
                             H = 0, sigma.H = .02,
-                            x1.r = -.49, 
-                            x2.r = -.5,
-                            phi.1=.14, phi.2=.16, 
-                            gamma.3=.1, 
-                            gamma.4 = .1, 
-                            psi.1=.1, 
-                            beta.0 = -1.38,
+                            psi.1=-.03, 
+                            
+                            theta.P = -76, sigma.P = 69, 
+                            gamma.3=-92, 
+                            gamma.4 = 206, 
+                            gamma.5 = -87,
+                            
+                            beta.0 = -2.51,
                             #beta.1=0,
                             #beta.2=0,
                             beta.3=0,
-                            beta.4 = 0,
-                            beta.5 = 0,
-                            beta.6 = 0, 
-                            alpha.1 = 50, 
-                            alpha.2 = 70,
-                            alpha.3 = 60,
-                            om.1= .1,
-                            om.2= .1,
-                            om.3= -.13,
-                            q= -.92,
+                            beta.4 = -.809,
+                            beta.5 = -1.17,
+                            beta.6 = -.46, 
+                            
+                            alpha.0 = 10100,
+                            alpha.1 = 46500 , 
+                            alpha.2 = 600,
+                            alpha.3 = 12,
+                            
                             P= 50 # number of practices in a region
                             
                             )
@@ -90,16 +99,16 @@ make_regions <- function(global_params){
     # U.post <- rnorm(P, mean = params$H + params$psi.2, sd = params$sigma.H) #post-period unobserved H
     
     # make sure at least within range of ATT from JAMA paper
-    delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2, sd = params$sigma.P)
+    delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2 + params$gamma.5*X1*X2, sd = params$sigma.P)
     
     betas <- c(params$beta.0, params$beta.3, params$beta.4, params$beta.5, params$beta.6)
     trt.prob <- inv.logit(betas %*% rbind(1, U, X1, X2, S))
     A <- rbern(n = P, prob = trt.prob)
     
-    Yb.pre <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2
-    Yb.post <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * A # observed outcome
-    Yb.post0 <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
-    Yb.post1 <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
+    Yb.pre <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2
+    Yb.post <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * A # observed outcome
+    Yb.post0 <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
+    Yb.post1 <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
 
     df <- rbind(df, data.frame(region_id, S, b, W,X1,X2, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
     
