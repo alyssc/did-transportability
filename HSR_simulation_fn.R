@@ -98,7 +98,7 @@ make_regions <- function(global_params){
     Yb.post0 <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
     Yb.post1 <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
 
-    df <- rbind(df, data.frame(region_id, S, b, W, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
+    df <- rbind(df, data.frame(region_id, S, b, B, W, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
     
   }
   
