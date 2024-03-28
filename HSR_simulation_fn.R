@@ -26,8 +26,6 @@ global_params <- data.frame(
                             gamma.5 = -87,
                             
                             beta.0 = -2.51,
-                            #beta.1=0,
-                            #beta.2=0,
                             beta.3=0,
                             beta.4 = -.809,
                             beta.5 = -1.17,
@@ -192,7 +190,7 @@ plot.did <- function(df){
 }
 
 
-# Calculate stimated and true PATT across variation of a single parameter
+# Calculate estimated and true PATT across variation of a single parameter
 sim_patt <- function(default_params,var_name,var_seq,nsim){
   x <- var_seq
   results <- matrix(NA,nrow = 0, ncol = 5)
