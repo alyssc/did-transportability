@@ -106,3 +106,4 @@ ggplot(sumstats.WS.long,aes(x=value,y=name)) +
 
 ### Figure 2: showing the PATT estimates across scenarios (and replications)
 ## Still TBD
+

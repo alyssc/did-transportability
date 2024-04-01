@@ -1,34 +1,42 @@
 library(boot)
 library(Rlab)
 library(tidyverse)
+library("reshape2") 
 
 # Defining parameters and functions for simulation study
 
 ## DATA GENERATING MECHANISMS ##
 
-global_params <- data.frame(theta.P = .2, sigma.P = .01, 
-                            H = .2, sigma.H = .1,
-                            x1.r = -.49, 
-                            x2.r = -.5,
-                            phi.1=.14, phi.2=.16, 
-                            gamma.2 = 0,
-                            gamma.3=.1, 
-                            gamma.4 = .1, 
-                            psi.1=.1, 
-                            beta.0 = 2,
-                            beta.1=.1,
-                            beta.2=0,
-                            beta.3=0,
-                            beta.4 = .1,
-                            beta.5 = .1,
-                            alpha.1 = 50, 
-                            alpha.2 = 70,
-                            alpha.3 = 60,
+global_params <- data.frame(
+                            x1.r = -.6, 
+                            x2.r = -.7,
+                            phi.1=.17, phi.2=.04, 
+                            
+                            q= -2.12,
                             om.1= .1,
-                            om.2= .1,
-                            om.3= -.13,
-                            q= -.92,
-                            P= 10 # number of practices in a region
+                            om.2= .6,
+                            om.3= .3,
+                            
+                            H = 0, sigma.H = .02,
+                            psi.1=-.03, 
+                            
+                            theta.P = -76, sigma.P = 69, 
+                            gamma.3=-92, 
+                            gamma.4 = 206, 
+                            gamma.5 = -87,
+                            
+                            beta.0 = -2.51,
+                            beta.3=0,
+                            beta.4 = -.809,
+                            beta.5 = -1.17,
+                            beta.6 = -.46, 
+                            
+                            alpha.0 = 10100,
+                            alpha.1 = 46500 , 
+                            alpha.2 = 600,
+                            alpha.3 = 12,
+                            
+                            P= 50 # number of practices in a region
                             
                             )
 
@@ -52,7 +60,10 @@ make_regions <- function(global_params){
                    S = integer(),
                    # practice_id added later
                    b = numeric(),
+                   B = numeric(),
                    W = integer(),
+                   X1 = integer(),
+                   X2 = integer(),
                    U = numeric(),
                    delta = numeric(),
                    A = integer(), 
@@ -74,7 +85,7 @@ make_regions <- function(global_params){
     params <- cbind(global_params, get_region_params(region_id, global_params, S))
     
     P <- params$P
-    n <- rbinom(P, 1000, .3) #patients in practices
+    n <- rbinom(P, 1200, .25) #patients in practices
     
     X1 <- rbern(n=P, prob=inv.logit(params$x1.r+params$phi.1*S) )
     X2 <- rbern(n=P, prob=inv.logit(params$x2.r+params$phi.2*S) )
@@ -83,22 +94,23 @@ make_regions <- function(global_params){
     B <- rbinom(P, n, inv.logit(params$q + params$om.1*X1 + params$om.2*X2 + params$om.3*S))
     b <- B/n
     
-    U <- rnorm(P, mean = params$H, sd = params$sigma.H + params$psi.1*S) # unobserved H
+    U <- rnorm(P, mean = params$H + params$psi.1*S, sd = params$sigma.H) # unobserved H
     # U.post <- rnorm(P, mean = params$H + params$psi.2, sd = params$sigma.H) #post-period unobserved H
     
     # make sure at least within range of ATT from JAMA paper
-    delta <- rnorm(P, params$theta.P + params$gamma.2*U + params$gamma.3*X1 + params$gamma.4*X2, sd = params$sigma.P)
+    delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2 + params$gamma.5*X1*X2, sd = params$sigma.P)
     
-    betas <- c(params$beta.0, params$beta.1, params$beta.2, params$beta.3, params$beta.4, params$beta.5)
-    trt.prob <- inv.logit(betas %*% rbind(1, n, b, U, X1, X2))
+    betas <- c(params$beta.0, params$beta.3, params$beta.4, params$beta.5, params$beta.6)
+    trt.prob <- inv.logit(betas %*% rbind(1, U, X1, X2, S))
     A <- rbern(n = P, prob = trt.prob)
     
-    Yb.pre <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2
-    Yb.post <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * A # observed outcome
-    Yb.post0 <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
-    Yb.post1 <- params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
+    Yb.pre <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2
+    Yb.post <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * A # observed outcome
+    Yb.post0 <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
+    Yb.post1 <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
 
     df <- rbind(df, data.frame(region_id, S, b, B, W, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
+
     
   }
   
@@ -107,10 +119,6 @@ make_regions <- function(global_params){
   return(df)
   
 }
-
-## Displaying and testing parameters
-# In the form of P(B=1 | S=1) etc. 
-
 
 
 ## ESTIMATION ##
@@ -147,64 +155,73 @@ estimate_patt <- function(df){
 
 ## True PATT 
 true_patt <- function(df){
-  I10 = 1*(df$T==1 & df$S==0)
+  I10 = 1*(df$A==1 & df$S==0)
   return(mean(I10*(df$Yb.post1 - df$Yb.post0)))
 }
 
 
 ## In-sample DiD
-
-
-
-
-
-
-
-# BELOW ARE DRAFT FUNCTIONS WHICH ARE NOT CURRENTLY CONSISTENT WITH ABOVE NOTATION
-
-#' Get Average Treatment Effect of Treated given a region's practice-level attributes
-#' @param region Region's practice-level attributes from make_region()
-#' @param type "t", "b", or "w" for total ATT, ATT for black beneficiaries, and ATT for white beneficiaries
-get_ATT <- function(region, type = "t"){
-  if(type == "t"){
-    return(mean(region$delta[region$treated == 1]))
-  } else if(type == "b"){
-    return(mean(region$delta.b[region$treated == 1]))
-  } else if(type == "w"){
-    return(mean(region$delta.w[region$treated == 1]))
-  }
+lm.did <- function(df, plot = F){
+  df_long <- gather(df, time, Y, Yb.pre:Yb.post)
+  df_long$time[df_long$time=="Yb.pre"] <- 0
+  df_long$time[df_long$time=="Yb.post"] <- 1
+  
+  lm.1 <- lm(Y ~ A + time + A * time + 
+                   X1+X2, data = df_long %>% filter(S==1) )
+  return(lm.1)
 }
 
-get_ATE <- function(region, type = "t"){
-  if(type == "t"){
-    return(mean(region$delta))
-  } else if(type == "b"){
-    return(mean(region$delta.b))
-  } else if(type == "w"){
-    return(mean(region$delta.w))
-  }
+# Plot in-sample DiD
+plot.did <- function(df){
+  df_long <- gather(df, time, Y, Yb.pre:Yb.post)
+  df_long$time[df_long$time=="Yb.pre"] <- 0
+  df_long$time[df_long$time=="Yb.post"] <- 1
+  
+  plot_data <- df_long %>% 
+    mutate(A = factor(A, labels = c("non-CPC+ participant", "CPC+ participant")),
+           time = factor(time, labels = c("Pre-period", "Post-period"))) %>% 
+    group_by(A,time) %>% 
+    summarize(mean_Y = mean(Y),
+              se_Y = sd(Y) / sqrt(n()),
+              upper = mean_Y + (-1.96 * se_Y),
+              lower = mean_Y + (1.96 * se_Y)) 
+  
+  return(ggplot(plot_data, aes(x = time, y = mean_Y, color = A)) +
+    geom_pointrange(aes(ymin = lower, ymax = upper), size = 1) + 
+    geom_line(aes(group = A)))
 }
 
-# Plot ATT.B - ATE.B across variation of a single parameter
-vary_param_plot <- function(default_params,var_name,var_seq,nsim){
+
+# Calculate estimated and true PATT across variation of a single parameter
+sim_patt <- function(default_params,var_name,var_seq,nsim){
   x <- var_seq
-  y <- rep(NA, length(x))
+  results <- matrix(NA,nrow = 0, ncol = 5)
   
   for (i in 1:length(x)){
     default_params[var_name] <- x[i]
-    y_singlesims <- rep(NA, nsim)
+    y_singlesims <- matrix(NA,nrow = 0, ncol = 5)
     
     for (j in 1:nsim){
-      region <- make_region(default_params)
-      y_singlesims[j] <- get_ATT(region,"b") - get_ATE(region,"b")
+      
+      df <- make_regions(default_params)
+      y_singlesims <- rbind(y_singlesims, c(x[i],true_patt(df),estimate_patt(df)))
     }
     
-    y[i] <- mean(y_singlesims)
+    results <- rbind(results, colMeans(y_singlesims))
     
   }
-  
-  plot(x, y, type="b", xlab=paste("Values of ",var_name), 
-       ylab="ATT-ATE for Black patients")
+  results <- as.data.frame(results)
+  colnames(results) <- c("psi.1","true", "gcomp", "ipw", "dr")
+  return(results)
 }
 
+# Plots the results of sim_patt
+plot_patt <- function(results, var_name){
+  results_long <- melt(results, id = var_name) 
+  plot_patt <- ggplot(results_long,             
+                      aes(x = get(var_name), 
+                          y = value, 
+                          color = variable)) +  geom_line() 
+  return(plot_patt)
+}
 
