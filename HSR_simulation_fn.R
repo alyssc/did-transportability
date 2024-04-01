@@ -27,9 +27,9 @@ global_params <- data.frame(
                             
                             beta.0 = -2.51,
                             beta.3=0,
-                            beta.4 = -.809,
-                            beta.5 = -1.17,
-                            beta.6 = -.46, 
+                            beta.4 = .809,
+                            beta.5 = 1.17,
+                            beta.6 = .46, 
                             
                             alpha.0 = 10100,
                             alpha.1 = 46500 , 

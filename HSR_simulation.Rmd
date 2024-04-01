@@ -33,41 +33,30 @@ Below, I print out simulated results of probabilities we have from the literatur
 ```{r, echo=F}
 # Parameter calibration
 
-# Proportion Black benes, SSP, system, and treated in CPC+ and non-CPC+ regions
-attributes_by_S <- df %>% 
-  group_by(S) %>% 
-  summarise("P(B=1 | S)" = mean(b),
-            "P(SSP | S)" = mean(X1),
-            "P(system | S)" = mean(X2),
-            "P(A | S)" = mean(A)
-            ) 
-
-# proportion Black in CPC+ and non-CPC+ participants within CPC+ regions
-race_by_participation <- df %>% 
-  filter(S==1) %>% 
-  group_by(A) %>%
-  summarise("P(B=1 | S=1,A)" = mean(b)
-            ) 
-
 # Proportion treated in SSP, in system, and overall
 prop_treated <- bind_cols(
   (
     df %>% 
+      filter(S==1,X1==0) %>% 
+      summarise(prop_SSP_treated = mean(A)) ),
+  (
+    df %>% 
       filter(S==1,X1==1) %>% 
+      summarise(prop_sys_treated = mean(A)) ),
+  (
+    df %>% 
+      filter(S==1,X2==0) %>% 
       summarise(prop_SSP_treated = mean(A)) ),
   (
     df %>% 
       filter(S==1,X2==1) %>% 
-      summarise(prop_sys_treated = mean(A)) ),
-  (
-    df %>% summarise(prop_treated = mean(A))
-  )
+      summarise(prop_sys_treated = mean(A)) )
   ) %>% 
-  `colnames<-`(c("P(A=1 | SSP=1, S=1)", "P(A=1 | sys=1, S=1)", "P(A=1)"))
+  `colnames<-`(c("P(A=1 | SSP=0, S=1)", "P(A=1 | SSP=1, S=1)", "P(A=1| sys=0, S=1)", "P(A=1 | sys=1, S=1)"))
 
 knitr::kable(attributes_by_S, caption = "B, SSP, System, and A by CPC+ or non-CPC+ region")
 knitr::kable(race_by_participation, caption = "Race by CPC+ Participation")
-knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation (in SSP, System, and Overall)")
+knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation by System/SSP status")
 
 ```
 
