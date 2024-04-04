@@ -33,6 +33,22 @@ Below, I print out simulated results of probabilities we have from the literatur
 ```{r, echo=F}
 # Parameter calibration
 
+# Proportion Black benes, SSP, system, and treated in CPC+ and non-CPC+ regions
+attributes_by_S <- df %>% 
+  group_by(S) %>% 
+  summarise("P(B=1 | S)" = mean(b),
+            "P(SSP | S)" = mean(X1),
+            "P(system | S)" = mean(X2),
+            "P(A | S)" = mean(A)
+            ) 
+
+# proportion Black in CPC+ and non-CPC+ participants within CPC+ regions
+race_by_participation <- df %>% 
+  filter(S==1) %>% 
+  group_by(A) %>%
+  summarise("P(B=1 | S=1,A)" = mean(b)
+            ) 
+
 # Proportion treated in SSP, in system, and overall
 prop_treated <- bind_cols(
   (
@@ -58,6 +74,64 @@ knitr::kable(attributes_by_S, caption = "B, SSP, System, and A by CPC+ or non-CP
 knitr::kable(race_by_participation, caption = "Race by CPC+ Participation")
 knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation by System/SSP status")
 
+```
+
+
+Calibrating first set of parameters:
+
+```{r}
+new_params = global_params
+new_params$q = global_params$q-.022
+new_params$om.3 = global_params$om.3-.005
+new_params$x1.r = global_params$x1.r + .023
+new_params$phi.1 = global_params$phi.1 - .35
+new_params$x2.r = global_params$x2.r + .025
+new_params$phi.2 = global_params$phi.2 - .115
+
+new_params$beta.0 = global_params$beta.0 - .54
+new_params$beta.6 = global_params$beta.6 + .08
+# new_params$beta.4= global_params$beta.4 -1
+# new_params$beta.5= global_params$beta.5 -1
+calib_assist(new_params)
+```
+
+
+```{r}
+# Scenario: More Black patients in SSP/system hospitals
+new_params$om.1= -.165
+new_params$om.2= -.097
+new_params$beta.4 = .809
+new_params$beta.5 = 1.17
+
+df <- make_regions(new_params)
+df <- tibble::as_tibble(df)
+df %>% 
+  #filter(S==1) %>% group_by(X1) %>% 
+  group_by(S) %>%
+  summarise(prob_A = mean(A))
+```
+
+
+```{r}
+new_params$om.2= global_params$om.2 + .7
+calib_assist2(new_params)
+
+for(adjust1 in seq(-3,-4,-.5)){
+  for(adjust2 in seq(-3,-4,-.5)){
+    new_params$beta.4= global_params$beta.4 + adjust1
+    new_params$beta.5= global_params$beta.5 + adjust2
+    print(c(adjust1, adjust2, calib_assist2(new_params)[2,"P(B=1 | S=1,A)"]))
+  }
+}
+```
+```{r}
+for(adjust1 in seq(.6,.7,.01)){
+  for(adjust2 in seq(.6,.7,.01)){
+    new_params$om.1= global_params$om.1 + adjust1
+    new_params$om.2= global_params$om.2 + adjust2
+    print(c(adjust1, adjust2, calib_assist2(new_params)[1,"P(B=1 | S=1,A)"]))
+  }
+}
 ```
 
 

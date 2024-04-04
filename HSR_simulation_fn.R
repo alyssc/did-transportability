@@ -8,14 +8,14 @@ library("reshape2")
 ## DATA GENERATING MECHANISMS ##
 
 global_params <- data.frame(
-                            x1.r = -.6, 
-                            x2.r = -.7,
+                            x1.r = -.64, 
+                            x2.r = -.74,
                             phi.1=.17, phi.2=.04, 
                             
                             q= -2.12,
-                            om.1= .1,
-                            om.2= .6,
-                            om.3= .3,
+                            om.1= 0,
+                            om.2= .06,
+                            om.3= -.3,
                             
                             H = 0, sigma.H = .02,
                             psi.1=-.03, 
@@ -36,7 +36,7 @@ global_params <- data.frame(
                             alpha.2 = 600,
                             alpha.3 = 12,
                             
-                            P= 50 # number of practices in a region
+                            P= 1000 # number of practices in a region
                             
                             )
 
@@ -85,7 +85,7 @@ make_regions <- function(global_params){
     params <- cbind(global_params, get_region_params(region_id, global_params, S))
     
     P <- params$P
-    n <- rbinom(P, 1200, .25) #patients in practices
+    n <- rbinom(P, 720, .25) #patients in practices
     
     X1 <- rbern(n=P, prob=inv.logit(params$x1.r+params$phi.1*S) )
     X2 <- rbern(n=P, prob=inv.logit(params$x2.r+params$phi.2*S) )
@@ -109,7 +109,7 @@ make_regions <- function(global_params){
     Yb.post0 <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
     Yb.post1 <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
 
-    df <- rbind(df, data.frame(region_id, S, b, B, W, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
+    df <- rbind(df, data.frame(region_id, S, b, B, W,X1, X2, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
 
     
   }
@@ -153,7 +153,7 @@ estimate_patt <- function(df){
   return(c(gcomp.val, ipw.val, dr.val))
 }
 
-## True PATT 
+## True PATT- WRONG!
 true_patt <- function(df){
   I10 = 1*(df$A==1 & df$S==0)
   return(mean(I10*(df$Yb.post1 - df$Yb.post0)))
@@ -218,10 +218,11 @@ sim_patt <- function(default_params,var_name,var_seq,nsim){
 # Plots the results of sim_patt
 plot_patt <- function(results, var_name){
   results_long <- melt(results, id = var_name) 
-  plot_patt <- ggplot(results_long,             
+  plot_patt <- ggplot(results_long,
                       aes(x = get(var_name), 
                           y = value, 
                           color = variable)) +  geom_line() 
   return(plot_patt)
 }
+
 
