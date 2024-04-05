@@ -7,12 +7,12 @@ theme_set(theme_minimal())
 global_params <- data.frame(expand.grid(
   x1.r = -.64, 
   x2.r = -.74,
-  phi.1= c(.15,.19), # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
-  phi.2= c(.03,.07), # log odds ratio of Pr(system) in CPC+ vs non-CPC+
+  phi.1= c(-.17,.17), # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
+  phi.2= c(-.14,.14), # log odds ratio of Pr(system) in CPC+ vs non-CPC+
   
   q= -2.12,
-  om.1= c(-.165,.149), #log odds ratio of Pr(Black) in SSP vs non-SSP
-  om.2= c(-.097,.138), #log odds ratio of Pr(Black) in system vs indep
+  om.1= c(-.25,.25), #log odds ratio of Pr(Black) in SSP vs non-SSP
+  om.2= c(-.23,.23), #log odds ratio of Pr(Black) in system vs indep
   om.3= -.3,
   
   H = 0, sigma.H = 0.04,
@@ -41,7 +41,7 @@ global_params <- data.frame(expand.grid(
 mutate(scenario=rep(1:16,50))
 
 # What are the scenarios?
-# global_params%>% filter(replicate==1) %>% select(scenario,phi.1,phi.2,om.1,om.2)
+global_params%>% filter(replicate==1) %>% select(scenario,phi.1,phi.2,om.1,om.2)
 
 ## Simulate the data
 simdat <- global_params %>% group_by(scenario,replicate) %>%
@@ -69,25 +69,36 @@ sumstats.AS.long <- sumstats.AS %>% pivot_longer(5:9) %>%
                      labels=c('% Black',
                               'Non-SSP, independent','Non-SSP, system',
                               'SSP, independent','SSP, system')))
-panelA <- ggplot(filter(sumstats.AS.long,trt=="Treated"),aes(x=value,y=name)) + 
+panelA <- ggplot(filter(sumstats.AS.long,trt=="Treated",name!="% Black"),aes(x=value,y=name)) + 
   geom_boxplot(aes(col=group),position=position_dodge(width=1)) + facet_wrap(~scenario) +
   scale_shape_manual(values=c('Sample'=3,'Target'=19)) +
   scale_x_continuous("Mean") + ylab("") + theme(legend.position="bottom") +
   ggtitle('CPC+ practices, weighted')
 panelA
-ggsave("W_dist.png",panelA,width=6,height=6)
+ggsave("W_dist.png",panelA,width=8,height=6)
 
 # Re-express as the distribution of the difference between sample and target CPC+ practices:
 # no visual subtraction needed
 diffstats.AS.long <- filter(sumstats.AS.long,trt=="Treated") %>% pivot_wider(names_from=group,values_from=value) %>% 
   mutate(diff=Target-Sample) %>% select(scenario,replicate,name,diff)
-panelB <- ggplot(filter(diffstats.AS.long),aes(x=diff,y=name)) + 
+panelB <- ggplot(filter(diffstats.AS.long,name!="% Black"),aes(x=diff,y=name)) + 
   geom_boxplot() + facet_wrap(~scenario) +
   scale_shape_manual(values=c('Sample'=3,'Target'=19)) +
   scale_x_continuous("Difference (target - sample)") + ylab("") + theme(legend.position="bottom") +
   ggtitle('CPC+ practices, weighted') + geom_vline(xintercept =0)
 panelB
-ggsave("W_dist_diff.png",panelB,width=8,height=6)
+ggsave("W_diff_dist_by_scenario.png",panelB,width=8,height=6)
+
+# Re-arrange so the scenarios are along the axis and the panels are practice proportions:
+# Arrange by proportion non-SSP system (since that's the one that had the wonky treatement effect):
+scenario.order <- (diffstats.AS.long %>% filter(name=="Non-SSP, system") %>% group_by(scenario) %>% summarize(median=quantile(diff,p=0.5)) %>% arrange(median))$scenario
+panelB2 <- ggplot(filter(diffstats.AS.long,name!="% Black"),aes(x=diff,y=factor(scenario,levels=order))) + 
+  geom_boxplot() + facet_grid(~name) +
+  scale_shape_manual(values=c('Sample'=3,'Target'=19)) +
+  scale_x_continuous("Difference (target - sample)") + ylab("") + theme(legend.position="bottom") +
+  ggtitle('CPC+ practices, weighted') + geom_vline(xintercept =0)
+panelB2
+ggsave("W_diff_dist_by_W.png",panelB2,width=8,height=6)
 
 ### Figure 2: showing the PATT estimates across scenarios (and replications)
 estimates <- simdat %>% group_by(scenario,replicate) %>%
@@ -100,19 +111,30 @@ estimates <- simdat %>% group_by(scenario,replicate) %>%
          true.diff=true.patt-true.satt,
          est.diff=dr - est.satt)
 # IPW is still wrong, but gc and dr are exactly right now
-err.plot.dat <- estimates %>% select(replicate,scenario,dr.patt.err,satt.err) %>% 
-  pivot_longer(dr.patt.err:satt.err)
-diff.plot.dat <- estimates %>% select(replicate,scenario,true.diff,est.diff) %>%
-  pivot_longer(true.diff:est.diff)
+
+# SATT truth 
+ggplot(estimates,aes(x=factor(scenario,levels=scenario.order),y=true.satt)) + geom_boxplot() + 
+  geom_hline(yintercept=0) + ylab("True SATT") + xlab("Scenario")
+ggsave("true_SATT.png",width=6,height=4)
+
+# PATT truth
+ggplot(estimates,aes(x=factor(scenario,levels=scenario.order),y=true.patt)) + geom_boxplot() + 
+  geom_hline(yintercept=0) + ylab("True PATT") + xlab("Scenario")
+ggsave("true_PATT.png",width=6,height=4)
   
 # Showing the estimation error
+err.plot.dat <- estimates %>% select(replicate,scenario,dr.patt.err,satt.err) %>% 
+  pivot_longer(dr.patt.err:satt.err)
 panelC <- ggplot(err.plot.dat,aes(x=name,y=value)) + geom_boxplot() + facet_wrap(~scenario) + 
   geom_hline(yintercept=0)
 panelC 
 ggsave("est_vs_true.png",panelC,width=8,height=6)
 
 # Showing the difference between target and sample (both estimated and true)
-panelD <- ggplot(diff.plot.dat,aes(x=name,y=value)) + geom_boxplot() + facet_wrap(~scenario) + 
-  geom_hline(yintercept=0)
+diff.plot.dat <- estimates %>% select(replicate,scenario,true.diff,est.diff) %>%
+  pivot_longer(true.diff:est.diff)
+panelD <- ggplot(diff.plot.dat,aes(x=factor(scenario,levels=scenario.order),y=value,group=interaction(name,scenario))) + 
+  geom_boxplot(aes(col=name),position=position_dodge(width=.75)) + geom_hline(yintercept=0) +
+  labs(x="Scenario",y="Target ATT - Sample ATT",color="") + scale_color_discrete(labels=c('Estimated','True'))
 panelD
-ggsave("PATT_vs_SATT.png",panelD,width=8,height=6)
+ggsave("PATT_minus_SATT.png",panelD,width=8,height=6)
