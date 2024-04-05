@@ -17,19 +17,19 @@ global_params <- data.frame(
                             om.2= .6,
                             om.3= .3,
                             
-                            H = 0, sigma.H = .02,
+                            H = 0, sigma.H = 0,
                             psi.1=-.03, 
                             
-                            theta.P = -76, sigma.P = 69, 
+                            theta.P = -76, sigma.P =0, 
                             gamma.3=-92, 
                             gamma.4 = 206, 
                             gamma.5 = -87,
                             
                             beta.0 = -2.51,
                             beta.3=0,
-                            beta.4 = -.809,
-                            beta.5 = -1.17,
-                            beta.6 = -.46, 
+                            beta.4 = .809,
+                            beta.5 = 1.17,
+                            beta.6 = .46, 
                             
                             alpha.0 = 10100,
                             alpha.1 = 46500 , 
@@ -104,18 +104,22 @@ make_regions <- function(global_params){
     trt.prob <- inv.logit(betas %*% rbind(1, U, X1, X2, S))
     A <- rbern(n = P, prob = trt.prob)
     
-    Yb.pre <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2
-    Yb.post <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * A # observed outcome
-    Yb.post0 <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
-    Yb.post1 <- params$alpha.0+params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
-
-    df <- rbind(df, data.frame(region_id, S, b, B, W, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
-
+    Yb.pre <-   params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2
+    Yb.post <-  params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * A # observed outcome
+    Yb.post0 <- params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
+    Yb.post1 <- params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
     
+    df <- rbind(df, data.frame(region_id, S, b, B, W, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
   }
+
+  # Practice-level weights (proportion of Black benes in {S} cared for by each practice)
+  B0 <- sum(df$B[df$S==0])
+  B1 <- sum(df$B[df$S==1])
+  # For sample practices
+  df$wt <- (df$B/B1)*as.numeric(df$S==1) + (df$B/B0)*as.numeric(df$S==0)
   
   df$W <- factor(df$W, levels = c(1:4))
-  colnames(df)[2] <- "S"
+  #colnames(df)[2] <- "S"
   return(df)
   
 }
@@ -126,7 +130,7 @@ make_regions <- function(global_params){
 
 ## Returns vector of three estimates from G comp, IPW, DR estimators
 estimate_patt <- function(df){
-  m <- lm(Yb.post-Yb.pre ~ W*A*S, data = df)
+  m <- lm(Yb.post-Yb.pre ~ W*A*S, data = df) 
   m0 <- predict(m, newdata=df %>% mutate(A=0,S=1))
   m1 <- predict(m, newdata=df %>% mutate(A=1,S=1))
   
@@ -134,7 +138,7 @@ estimate_patt <- function(df){
   I11 = 1*(df$A==1 & df$S==1)
   I01 = 1*(df$A==0 & df$S==1)
   
-  p10 = mean(df$A*(1-df$S))
+  p10 = weighted.mean(df$A*(1-df$S),w=df$wt)
   
   gT <- lm(A ~ W*S, data = df)
   gS <- lm(S ~ W, data = df)
@@ -143,32 +147,36 @@ estimate_patt <- function(df){
   g01 <- (1-predict(gT, newdata=df %>% mutate(S=1))) * predict(gS, newdata=df)
   g10 <- predict(gT, newdata=df %>% mutate(S=0)) * (1-predict(gS, newdata=df))
   
-  gcomp.val <- mean(I10*(m1-m0)/p10)
-  ipw.val <- mean(I11*g10*(df$Yb.post-df$Yb.pre)/(p10*g11) -
-                I01*g10*(df$Yb.post-df$Yb.pre)/(p10*g01))
-  dr.val <- mean(I11*g10*((df$Yb.post-df$Yb.pre) - m1)/(p10*g11) -
-               I01*g10*((df$Yb.post-df$Yb.pre) - m0)/(p10*g01) +
-               I10*(m1 - m0)/p10)
+  gcomp.val <- weighted.mean(I10/p10*(m1-m0),w=df$wt)
+  # This isn't right yet: 
+  ipw.val <- weighted.mean((I11*g10*(df$Yb.post-df$Yb.pre)/(p10*g11)) - 
+                           (I01*g10*(df$Yb.post-df$Yb.pre)/(p10*g01)),w=df$wt)
   
-  return(c(gcomp.val, ipw.val, dr.val))
+  dr.val <- weighted.mean(I11*g10*((df$Yb.post-df$Yb.pre) - m1)/(p10*g11) -
+               I01*g10*((df$Yb.post-df$Yb.pre) - m0)/(p10*g01) +
+               I10*(m1 - m0)/p10,w=df$wt)
+  
+  return(tibble('gc'=gcomp.val, 'ipw'=ipw.val,'dr'= dr.val))
 }
 
 ## True PATT 
 true_patt <- function(df){
   I10 = 1*(df$A==1 & df$S==0)
-  return(mean(I10*(df$Yb.post1 - df$Yb.post0)))
+  p10 = weighted.mean(df$A*(1-df$S),w=df$wt)
+  return(weighted.mean(I10*(df$Yb.post1 - df$Yb.post0)/p10,w=df$wt))
 }
 
 
 ## In-sample DiD
 lm.did <- function(df, plot = F){
   df_long <- gather(df, time, Y, Yb.pre:Yb.post)
-  df_long$time[df_long$time=="Yb.pre"] <- 0
-  df_long$time[df_long$time=="Yb.post"] <- 1
+  df_long$period <- ifelse(df_long$time=="Yb.pre",0,1)
   
-  lm.1 <- lm(Y ~ A + time + A * time + 
-                   X1+X2, data = df_long %>% filter(S==1) )
-  return(lm.1)
+  est.satt <- summary(lm(Y ~ A*period, data = df_long %>% filter(S==1) ,weights=wt))$coef['A:period','Estimate']
+  true.satt <- (df %>% filter(S==1,A==1) %>% mutate(delta=Yb.post1-Yb.post0) %>%
+    summarize(mean=weighted.mean(delta,w=wt)))$mean
+  
+  return(tibble('est.satt'=est.satt,'true.satt'=true.satt))
 }
 
 # Plot in-sample DiD
@@ -224,4 +232,3 @@ plot_patt <- function(results, var_name){
                           color = variable)) +  geom_line() 
   return(plot_patt)
 }
-
