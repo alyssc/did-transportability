@@ -23,11 +23,41 @@ calib_assist <- function(new_params){
     "P(B=1 | S)" = c(.107, .081),
     "P(SSP | S)" = c(0.35, 0.31),
     "P(system | S)" = c(.33, .316),
-    "P(A | S)" = c(.1,.15)
+    "P(A | S)" = c(.1,.18)
   )
   return(attributes_by_S-target)
 }
 
+calib_assist1 <- function(new_params){
+  df <- make_regions(new_params)
+  df <- tibble::as_tibble(df)
+
+  
+  val <- c( df %>% 
+              filter(S==1,X1==0) %>% 
+              summarise(prop = mean(A)) %>%
+              pull(prop), 
+           df %>% 
+             filter(S==1,X1==1) %>% 
+             summarise(prop = mean(A)) %>%
+             pull(prop),
+           df %>% 
+             filter(S==1,X2==0) %>% 
+             summarise(prop = mean(A)) %>%
+             pull(prop),
+           df %>% 
+             filter(S==1,X2==1) %>% 
+             summarise(prop = mean(A)) %>%
+             pull(prop)
+           )
+  
+  
+  target <- c(.141, .269, .121, .309)
+  
+  return(val-target)
+}
+
+# input is params
 calib_assist2 <- function(new_params){
   df <- make_regions(new_params)
   df <- tibble::as_tibble(df)

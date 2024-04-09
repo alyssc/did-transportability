@@ -14,6 +14,8 @@ We create a single instantiation of the simulation in this block:
 
 ```{r}
 source("HSR_simulation_fn.R", local = knitr::knit_global())
+source("HSR_param_calib.R", local = knitr::knit_global())
+
 df <- make_regions(global_params)
 head(df, 2)
 dim(df)
@@ -54,15 +56,15 @@ prop_treated <- bind_cols(
   (
     df %>% 
       filter(S==1,X1==0) %>% 
-      summarise(prop_SSP_treated = mean(A)) ),
+      summarise(prop_noSSP_treated = mean(A)) ),
   (
     df %>% 
       filter(S==1,X1==1) %>% 
-      summarise(prop_sys_treated = mean(A)) ),
+      summarise(prop_SSP_treated = mean(A)) ),
   (
     df %>% 
       filter(S==1,X2==0) %>% 
-      summarise(prop_SSP_treated = mean(A)) ),
+      summarise(prop_nosys_treated = mean(A)) ),
   (
     df %>% 
       filter(S==1,X2==1) %>% 
@@ -77,22 +79,17 @@ knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation by System
 ```
 
 
+CALIBRATION
+
 Calibrating first set of parameters:
 
 ```{r}
 new_params = global_params
-new_params$q = global_params$q-.022
-new_params$om.3 = global_params$om.3-.005
-new_params$x1.r = global_params$x1.r + .023
-new_params$phi.1 = global_params$phi.1 - .35
-new_params$x2.r = global_params$x2.r + .025
-new_params$phi.2 = global_params$phi.2 - .115
 
-new_params$beta.0 = global_params$beta.0 - .54
-new_params$beta.6 = global_params$beta.6 + .08
-# new_params$beta.4= global_params$beta.4 -1
-# new_params$beta.5= global_params$beta.5 -1
-calib_assist(new_params)
+for(adjust1 in seq(-.3,.3,.1) ){
+  new_params$beta.0= global_params$beta.0 + adjust1
+  print(c(adjust1, calib_assist(new_params)[1,"P(A | S)"] ))
+}
 ```
 
 
@@ -111,28 +108,35 @@ df %>%
   summarise(prob_A = mean(A))
 ```
 
+Now calibrating second table of parameters: 
 
 ```{r}
-new_params$om.2= global_params$om.2 + .7
-calib_assist2(new_params)
+new_params = global_params
+calib_assist1(new_params)
 
-for(adjust1 in seq(-3,-4,-.5)){
-  for(adjust2 in seq(-3,-4,-.5)){
-    new_params$beta.4= global_params$beta.4 + adjust1
-    new_params$beta.5= global_params$beta.5 + adjust2
-    print(c(adjust1, adjust2, calib_assist2(new_params)[2,"P(B=1 | S=1,A)"]))
-  }
+#Search
+for(adjust1 in seq(-.02, .02, .01 ) ){
+  new_params$beta.0= global_params$beta.0 + adjust1
+  print(c(adjust1, calib_assist1(new_params)[3],  calib_assist1(new_params)[4]))
 }
+
 ```
+
+Calibrating table 3: 
+
 ```{r}
-for(adjust1 in seq(.6,.7,.01)){
-  for(adjust2 in seq(.6,.7,.01)){
-    new_params$om.1= global_params$om.1 + adjust1
-    new_params$om.2= global_params$om.2 + adjust2
-    print(c(adjust1, adjust2, calib_assist2(new_params)[1,"P(B=1 | S=1,A)"]))
-  }
+new_params = global_params
+
+for(adjust1 in seq(-.02, .02, .01 ) ){
+  new_params$om.1= global_params$om.1 + adjust1
+  print(c(adjust1, calib_assist2(new_params)[1,2],  calib_assist2(new_params)[2,2]))
 }
+
 ```
+
+
+
+DID EXAMPLE IN-SAMPLE: 
 
 
 Running diff-in-diff in-sample: 
@@ -149,13 +153,13 @@ plot.did(df)
 ```
 
 
-
 ```{r}
 df %>% 
   ggplot( aes(x=U, color=factor(S, levels = c("0","1")),fill=factor(S, levels = c("0","1")))) + 
   geom_density(alpha=.3)
 
 ```
+
 ```{r}
 results <- sim_plot_patt(global_params,"psi.1",c(-.1,0,.1),nsim=5)
 plot_patt(results, var_name = "psi.1")
@@ -165,8 +169,8 @@ plot_patt(results, var_name = "psi.1")
 p <- c( .1)
 log(p/(1-p))
 
-q <- c(0.15) 
-log( (p*(1-q))/(q*(1-p)) )
+q <- c( .18) 
+log( (q*(1-p))/(p*(1-q)) )
 ```
 
 

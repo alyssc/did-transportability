@@ -8,14 +8,14 @@ library("reshape2")
 ## DATA GENERATING MECHANISMS ##
 
 global_params <- data.frame(
-                            x1.r = -.64, 
-                            x2.r = -.74,
-                            phi.1=.17, phi.2=.04, 
+                            x1.r = -.64 + .023, 
+                            x2.r = -.74 + .025,
+                            phi.1= .17 - .35, phi.2=.04 - .115, 
                             
-                            q= -2.12,
+                            q= -2.12 -.022,
                             om.1= 0,
                             om.2= .06,
-                            om.3= -.3,
+                            om.3= -.3 -.005,
                             
                             H = 0, sigma.H = .02,
                             psi.1=-.03, 
@@ -25,11 +25,11 @@ global_params <- data.frame(
                             gamma.4 = 206, 
                             gamma.5 = -87,
                             
-                            beta.0 = -2.51,
+                            beta.0 = -2.51 - .54,
                             beta.3=0,
                             beta.4 = .809,
                             beta.5 = 1.17,
-                            beta.6 = .46, 
+                            beta.6 = .618 + .16, 
                             
                             alpha.0 = 10100,
                             alpha.1 = 46500 , 
