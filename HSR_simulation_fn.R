@@ -7,30 +7,29 @@ library("reshape2")
 
 ## DATA GENERATING MECHANISMS ##
 
-# Writing parameters as two parts: original parameter value, and calibration adjustment
 global_params <- data.frame(
-                            x1.r = -.64 + .023, 
-                            x2.r = -.74 + .025,
-                            phi.1= .17 - .35, phi.2=.04 - .1, 
+                            x1.r = -.617, 
+                            x2.r = -.715,
+                            phi.1= -.18, phi.2=-.06, 
                             
-                            q= -2.12 +.44,
+                            q= -1.68,
                             om.1= -.165,
-                            om.2= -.097-1.6,
-                            om.3= -.3 +0.065,
+                            om.2= -1.7,
+                            om.3= -.235,
                             
-                            H = 0, sigma.H = 0,
+                            H = 0, sigma.H = 0.02,
                             psi.1=-.03, 
                             
-                            theta.P = -76 + 7.5, sigma.P =0, 
+                            theta.P = -68.5, sigma.P =0, 
                             gamma.3=-92, 
                             gamma.4 = 206, 
                             gamma.5 = -87,
                             
-                            beta.0 = -2.51 - .54,
+                            beta.0 = -3.05,
                             beta.3=0,
-                            beta.4 = .809+.03,
+                            beta.4 = .839,
                             beta.5 = 1.17,
-                            beta.6 = .618 + .16, 
+                            beta.6 = .778, 
                             
                             alpha.0 = 10100,
                             alpha.1 = 46500 , 

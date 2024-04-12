@@ -17,7 +17,6 @@ source("HSR_simulation_fn.R", local = knitr::knit_global())
 source("HSR_param_calib.R", local = knitr::knit_global())
 ```
 
-
 Here, I test our ability to estimate the PATT (using 3 estimators) and also calculate the true PATT: 
 
 ```{r}
@@ -27,70 +26,13 @@ estimate_patt(df)
 true_patt(df)
 ```
 
-Below, I print out simulated results of probabilities we have from the literature that we can use to help calibrate our parameters. 
-
-```{r, echo=F}
-# Parameter calibration
-
-# Proportion Black benes, SSP, system, and treated in CPC+ and non-CPC+ regions
-attributes_by_S <- df %>% 
-  group_by(S) %>% 
-  summarise("P(B=1 | S)" = mean(b),
-            "P(SSP=1 | S)" = mean(X1),
-            "P(system=1 | S)" = mean(X2),
-            "P(A=1 | S)" = mean(A)
-            ) 
-
-# proportion Black in CPC+ and non-CPC+ participants within CPC+ regions
-race_by_participation <- df %>% 
-  filter(S==1) %>% 
-  group_by(A) %>%
-  summarise("P(B=1 | S=1,A)" = mean(b)
-            ) 
-
-# Proportion treated in SSP, in system, and overall
-prop_treated <- bind_cols(
-  (
-    df %>% 
-      filter(S==1,X1==0) %>% 
-      summarise(prop_noSSP_treated = mean(A)) ),
-  (
-    df %>% 
-      filter(S==1,X1==1) %>% 
-      summarise(prop_SSP_treated = mean(A)) ),
-  (
-    df %>% 
-      filter(S==1,X2==0) %>% 
-      summarise(prop_nosys_treated = mean(A)) ),
-  (
-    df %>% 
-      filter(S==1,X2==1) %>% 
-      summarise(prop_sys_treated = mean(A)) )
-  ) %>% 
-  `colnames<-`(c("P(A=1 | SSP=0, S=1)", "P(A=1 | SSP=1, S=1)", "P(A=1| sys=0, S=1)", "P(A=1 | sys=1, S=1)"))
-
-knitr::kable(attributes_by_S, caption = "B, SSP, System, and A by CPC+ or non-CPC+ region")
-knitr::kable(race_by_participation, caption = "Race by CPC+ Participation")
-knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation by System/SSP status")
-
-```
-
-
-
 
 DID EXAMPLE IN-SAMPLE: 
-
 
 Running diff-in-diff in-sample: 
 
 ```{r}
-lm.1 <- lm.did(df,plot=T)
-
-# Effect of CPC+ participation on expenditures
-lm.1$coefficients["A"]
-```
-
-```{r, warning = F}
+lm.did(df,plot=T)
 plot.did(df)
 ```
 
@@ -99,7 +41,6 @@ plot.did(df)
 df %>% 
   ggplot( aes(x=U, color=factor(S, levels = c("0","1")),fill=factor(S, levels = c("0","1")))) + 
   geom_density(alpha=.3)
-
 ```
 
 ```{r}
