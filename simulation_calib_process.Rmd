@@ -110,13 +110,9 @@ df %>%
 Calibrating to JAMA paper outcomes: 
 
 ```{r}
-lm.1 <- lm.did(df,plot=T)
-
-# Effect of CPC+ participation on expenditures
-lm.1$coefficients["A"]
-plot.did(df)
-
-head(df)
-
+new_params = global_params
+new_params$theta.P = global_params$theta.P +7.5
+df <- make_regions(new_params)
+lm.did(df,plot=T)
 ```
 

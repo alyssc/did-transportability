@@ -21,7 +21,7 @@ global_params <- data.frame(
                             H = 0, sigma.H = 0,
                             psi.1=-.03, 
                             
-                            theta.P = -76, sigma.P =0, 
+                            theta.P = -76 + 7.5, sigma.P =0, 
                             gamma.3=-92, 
                             gamma.4 = 206, 
                             gamma.5 = -87,
