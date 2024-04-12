@@ -3,10 +3,10 @@ title: "Data Generating Mechanism Testing"
 output: pdf_document
 ---
 
-
 ```{r, include=FALSE}
 library(boot)
 library(Rlab)
+#library(ramify)
 options(digits=3)
 ```
 
@@ -14,16 +14,15 @@ We create a single instantiation of the simulation in this block:
 
 ```{r}
 source("HSR_simulation_fn.R", local = knitr::knit_global())
-df <- make_regions(global_params)
-head(df, 2)
-dim(df)
-df <- tibble::as_tibble(df)
+source("HSR_param_calib.R", local = knitr::knit_global())
 ```
 
 
 Here, I test our ability to estimate the PATT (using 3 estimators) and also calculate the true PATT: 
 
 ```{r}
+df <- make_regions(global_params)
+df <- tibble::as_tibble(df)
 estimate_patt(df)
 true_patt(df)
 ```
@@ -37,9 +36,9 @@ Below, I print out simulated results of probabilities we have from the literatur
 attributes_by_S <- df %>% 
   group_by(S) %>% 
   summarise("P(B=1 | S)" = mean(b),
-            "P(SSP | S)" = mean(X1),
-            "P(system | S)" = mean(X2),
-            "P(A | S)" = mean(A)
+            "P(SSP=1 | S)" = mean(X1),
+            "P(system=1 | S)" = mean(X2),
+            "P(A=1 | S)" = mean(A)
             ) 
 
 # proportion Black in CPC+ and non-CPC+ participants within CPC+ regions
@@ -53,23 +52,33 @@ race_by_participation <- df %>%
 prop_treated <- bind_cols(
   (
     df %>% 
+      filter(S==1,X1==0) %>% 
+      summarise(prop_noSSP_treated = mean(A)) ),
+  (
+    df %>% 
       filter(S==1,X1==1) %>% 
       summarise(prop_SSP_treated = mean(A)) ),
   (
     df %>% 
-      filter(S==1,X2==1) %>% 
-      summarise(prop_sys_treated = mean(A)) ),
+      filter(S==1,X2==0) %>% 
+      summarise(prop_nosys_treated = mean(A)) ),
   (
-    df %>% summarise(prop_treated = mean(A))
-  )
+    df %>% 
+      filter(S==1,X2==1) %>% 
+      summarise(prop_sys_treated = mean(A)) )
   ) %>% 
-  `colnames<-`(c("P(A=1 | SSP=1, S=1)", "P(A=1 | sys=1, S=1)", "P(A=1)"))
+  `colnames<-`(c("P(A=1 | SSP=0, S=1)", "P(A=1 | SSP=1, S=1)", "P(A=1| sys=0, S=1)", "P(A=1 | sys=1, S=1)"))
 
 knitr::kable(attributes_by_S, caption = "B, SSP, System, and A by CPC+ or non-CPC+ region")
 knitr::kable(race_by_participation, caption = "Race by CPC+ Participation")
-knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation (in SSP, System, and Overall)")
+knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation by System/SSP status")
 
 ```
+
+
+
+
+DID EXAMPLE IN-SAMPLE: 
 
 
 Running diff-in-diff in-sample: 
@@ -86,13 +95,13 @@ plot.did(df)
 ```
 
 
-
 ```{r}
 df %>% 
   ggplot( aes(x=U, color=factor(S, levels = c("0","1")),fill=factor(S, levels = c("0","1")))) + 
   geom_density(alpha=.3)
 
 ```
+
 ```{r}
 results <- sim_plot_patt(global_params,"psi.1",c(-.1,0,.1),nsim=5)
 plot_patt(results, var_name = "psi.1")
@@ -102,8 +111,8 @@ plot_patt(results, var_name = "psi.1")
 p <- c( .1)
 log(p/(1-p))
 
-q <- c(0.15) 
-log( (p*(1-q))/(q*(1-p)) )
+q <- c( .18) 
+log( (q*(1-p))/(p*(1-q)) )
 ```
 
 

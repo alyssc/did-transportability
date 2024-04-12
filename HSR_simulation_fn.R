@@ -7,15 +7,16 @@ library("reshape2")
 
 ## DATA GENERATING MECHANISMS ##
 
+# Writing parameters as two parts: original parameter value, and calibration adjustment
 global_params <- data.frame(
-                            x1.r = -.6, 
-                            x2.r = -.7,
-                            phi.1=.17, phi.2=.04, 
+                            x1.r = -.64 + .023, 
+                            x2.r = -.74 + .025,
+                            phi.1= .17 - .35, phi.2=.04 - .1, 
                             
-                            q= -2.12,
-                            om.1= .1,
-                            om.2= .6,
-                            om.3= .3,
+                            q= -2.12 +.44,
+                            om.1= -.165,
+                            om.2= -.097-1.6,
+                            om.3= -.3 +0.065,
                             
                             H = 0, sigma.H = 0,
                             psi.1=-.03, 
@@ -25,18 +26,18 @@ global_params <- data.frame(
                             gamma.4 = 206, 
                             gamma.5 = -87,
                             
-                            beta.0 = -2.51,
+                            beta.0 = -2.51 - .54,
                             beta.3=0,
-                            beta.4 = .809,
+                            beta.4 = .809+.03,
                             beta.5 = 1.17,
-                            beta.6 = .46, 
+                            beta.6 = .618 + .16, 
                             
                             alpha.0 = 10100,
                             alpha.1 = 46500 , 
                             alpha.2 = 600,
                             alpha.3 = 12,
                             
-                            P= 50 # number of practices in a region
+                            P= 1200 # number of practices in a region
                             
                             )
 
@@ -85,7 +86,7 @@ make_regions <- function(global_params){
     params <- cbind(global_params, get_region_params(region_id, global_params, S))
     
     P <- params$P
-    n <- rbinom(P, 1200, .25) #patients in practices
+    n <- rbinom(P, 840, .81304) #patients in practices
     
     X1 <- rbern(n=P, prob=inv.logit(params$x1.r+params$phi.1*S) )
     X2 <- rbern(n=P, prob=inv.logit(params$x2.r+params$phi.2*S) )
@@ -108,7 +109,7 @@ make_regions <- function(global_params){
     Yb.post <-  params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * A # observed outcome
     Yb.post0 <- params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
     Yb.post1 <- params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
-    
+
     df <- rbind(df, data.frame(region_id, S, b, B, W, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
   }
 
@@ -159,7 +160,7 @@ estimate_patt <- function(df){
   return(tibble('gc'=gcomp.val, 'ipw'=ipw.val,'dr'= dr.val))
 }
 
-## True PATT 
+## True PATT
 true_patt <- function(df){
   I10 = 1*(df$A==1 & df$S==0)
   p10 = weighted.mean(df$A*(1-df$S),w=df$wt)
@@ -226,9 +227,10 @@ sim_patt <- function(default_params,var_name,var_seq,nsim){
 # Plots the results of sim_patt
 plot_patt <- function(results, var_name){
   results_long <- melt(results, id = var_name) 
-  plot_patt <- ggplot(results_long,             
+  plot_patt <- ggplot(results_long,
                       aes(x = get(var_name), 
                           y = value, 
                           color = variable)) +  geom_line() 
   return(plot_patt)
 }
+
