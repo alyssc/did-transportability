@@ -3,10 +3,10 @@ title: "Data Generating Mechanism Testing"
 output: pdf_document
 ---
 
-
 ```{r, include=FALSE}
 library(boot)
 library(Rlab)
+#library(ramify)
 options(digits=3)
 ```
 
@@ -15,17 +15,14 @@ We create a single instantiation of the simulation in this block:
 ```{r}
 source("HSR_simulation_fn.R", local = knitr::knit_global())
 source("HSR_param_calib.R", local = knitr::knit_global())
-
-df <- make_regions(global_params)
-head(df, 2)
-dim(df)
-df <- tibble::as_tibble(df)
 ```
 
 
 Here, I test our ability to estimate the PATT (using 3 estimators) and also calculate the true PATT: 
 
 ```{r}
+df <- make_regions(global_params)
+df <- tibble::as_tibble(df)
 estimate_patt(df)
 true_patt(df)
 ```
@@ -39,9 +36,9 @@ Below, I print out simulated results of probabilities we have from the literatur
 attributes_by_S <- df %>% 
   group_by(S) %>% 
   summarise("P(B=1 | S)" = mean(b),
-            "P(SSP | S)" = mean(X1),
-            "P(system | S)" = mean(X2),
-            "P(A | S)" = mean(A)
+            "P(SSP=1 | S)" = mean(X1),
+            "P(system=1 | S)" = mean(X2),
+            "P(A=1 | S)" = mean(A)
             ) 
 
 # proportion Black in CPC+ and non-CPC+ participants within CPC+ regions
@@ -78,61 +75,6 @@ knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation by System
 
 ```
 
-
-CALIBRATION
-
-Calibrating first set of parameters:
-
-```{r}
-new_params = global_params
-
-for(adjust1 in seq(-.3,.3,.1) ){
-  new_params$beta.0= global_params$beta.0 + adjust1
-  print(c(adjust1, calib_assist(new_params)[1,"P(A | S)"] ))
-}
-```
-
-
-```{r}
-# Scenario: More Black patients in SSP/system hospitals
-new_params$om.1= -.165
-new_params$om.2= -.097
-new_params$beta.4 = .809
-new_params$beta.5 = 1.17
-
-df <- make_regions(new_params)
-df <- tibble::as_tibble(df)
-df %>% 
-  #filter(S==1) %>% group_by(X1) %>% 
-  group_by(S) %>%
-  summarise(prob_A = mean(A))
-```
-
-Now calibrating second table of parameters: 
-
-```{r}
-new_params = global_params
-calib_assist1(new_params)
-
-#Search
-for(adjust1 in seq(-.02, .02, .01 ) ){
-  new_params$beta.0= global_params$beta.0 + adjust1
-  print(c(adjust1, calib_assist1(new_params)[3],  calib_assist1(new_params)[4]))
-}
-
-```
-
-Calibrating table 3: 
-
-```{r}
-new_params = global_params
-
-for(adjust1 in seq(-.02, .02, .01 ) ){
-  new_params$om.1= global_params$om.1 + adjust1
-  print(c(adjust1, calib_assist2(new_params)[1,2],  calib_assist2(new_params)[2,2]))
-}
-
-```
 
 
 

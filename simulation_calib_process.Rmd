@@ -1,0 +1,122 @@
+---
+title: "Simulation calibration process notebook"
+output: html_notebook
+---
+
+**Do not include in submission**
+
+```{r, include=FALSE}
+library(boot)
+library(Rlab)
+#library(ramify)
+options(digits=3)
+```
+
+CALIBRATION
+
+Calibrating first set of parameters:
+
+```{r}
+new_params = global_params
+calib_assist(new_params)
+
+for(adjust1 in seq(0,.02,.005) ){
+  new_params$phi.2= global_params$phi.2 + adjust1
+  print(c(adjust1, calib_assist(new_params)[2,"P(system | S)"] ))
+}
+```
+
+
+```{r}
+# Scenario: Fewer Black patients in SSP/system hospitals
+new_params$om.1= -.165
+new_params$om.2= -.097
+#new_params$beta.4 = .809
+#new_params$beta.5 = 1.17
+
+df <- make_regions(new_params)
+df <- tibble::as_tibble(df)
+df %>% 
+  filter(S==1) %>% group_by(X1) %>% 
+  #group_by(S) %>%
+  summarise(prob_B = mean(b))
+
+df %>% 
+  filter(S==1) %>% group_by(X2) %>% 
+  #group_by(S) %>%
+  summarise(prob_B = mean(b))
+
+df %>% 
+  filter(S==1) %>% group_by(A) %>% 
+  #group_by(S) %>%
+  summarise(prob_SSP = mean(X1))
+
+```
+
+Now calibrating second table of parameters: 
+
+```{r}
+new_params = global_params
+calib_assist1(new_params)
+
+#Search
+for(adjust1 in seq(0,.5,.1) ){
+  new_params$beta.5= global_params$beta.5 + adjust1
+  print(c(adjust1, calib_assist1(new_params)[3],  calib_assist1(new_params)[4]))
+}
+
+```
+
+Calibrating table 3: 
+
+```{r}
+new_params = global_params
+
+adjust_vals <- seq(-2,0,.2 )
+n <- length(adjust_vals)
+calib_errs <- matrix(NA, nrow = n, ncol = n)
+for(i in c(1:n) ){
+  for(j in c(1:n) ){
+    new_params$om.1= global_params$om.1 + adjust_vals[i]
+    new_params$om.2 = global_params$om.2 + adjust_vals[j]
+    calib_errs[i,j] = abs(calib_assist2(new_params)[1,2])+abs(calib_assist2(new_params)[2,2])
+  }
+}
+
+calib_errs
+which(abs(calib_errs) == min(abs(calib_errs)),arr.ind = TRUE)
+adjust_vals[11]
+adjust_vals[3]
+
+# Minimizing P(B=1|S=1, A=0), P(B=1|S=1, A=1) summed abs error
+new_params$om.1=global_params$om.1 + 0
+new_params$om.2 = global_params$om.2 -1.6
+calib_assist2(new_params)
+
+```
+
+```{r}
+df %>% 
+  filter(S==1)%>%
+  group_by(X1) %>% 
+  summarise(mean_B = mean(b))
+
+df %>% 
+  filter(S==1)%>%
+  group_by(X2) %>% 
+  summarise(mean_B = mean(b))
+```
+
+Calibrating to JAMA paper outcomes: 
+
+```{r}
+lm.1 <- lm.did(df,plot=T)
+
+# Effect of CPC+ participation on expenditures
+lm.1$coefficients["A"]
+plot.did(df)
+
+head(df)
+
+```
+
