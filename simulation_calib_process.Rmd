@@ -8,6 +8,7 @@ output: html_notebook
 ```{r, include=FALSE}
 library(boot)
 library(Rlab)
+library(tidyverse)
 #library(ramify)
 options(digits=3)
 ```
@@ -34,7 +35,7 @@ new_params$om.2= -.097
 #new_params$beta.4 = .809
 #new_params$beta.5 = 1.17
 
-df <- make_regions(new_params)
+df <- make_regions(global_params)
 df <- tibble::as_tibble(df)
 df %>% 
   filter(S==1) %>% group_by(X1) %>% 
