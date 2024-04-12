@@ -11,6 +11,11 @@ library(Rlab)
 library(tidyverse)
 #library(ramify)
 options(digits=3)
+
+source("HSR_simulation_fn.R", local = knitr::knit_global())
+source("HSR_param_calib.R", local = knitr::knit_global())
+df <- make_regions(global_params)
+df <- tibble::as_tibble(df)
 ```
 
 CALIBRATION
@@ -21,9 +26,9 @@ Calibrating first set of parameters:
 new_params = global_params
 calib_assist(new_params)
 
-for(adjust1 in seq(0,.02,.005) ){
-  new_params$phi.2= global_params$phi.2 + adjust1
-  print(c(adjust1, calib_assist(new_params)[2,"P(system | S)"] ))
+for(adjust1 in seq(.32,.34,.002) ){
+  new_params$q= global_params$q + adjust1
+  print(c(adjust1, calib_assist(new_params)[1,"P(B=1 | S)"] ))
 }
 ```
 
@@ -35,8 +40,6 @@ new_params$om.2= -.097
 #new_params$beta.4 = .809
 #new_params$beta.5 = 1.17
 
-df <- make_regions(global_params)
-df <- tibble::as_tibble(df)
 df %>% 
   filter(S==1) %>% group_by(X1) %>% 
   #group_by(S) %>%
@@ -73,7 +76,7 @@ Calibrating table 3:
 ```{r}
 new_params = global_params
 
-adjust_vals <- seq(-2,0,.2 )
+adjust_vals <- seq(-2,1,.5 )
 n <- length(adjust_vals)
 calib_errs <- matrix(NA, nrow = n, ncol = n)
 for(i in c(1:n) ){
@@ -86,12 +89,12 @@ for(i in c(1:n) ){
 
 calib_errs
 which(abs(calib_errs) == min(abs(calib_errs)),arr.ind = TRUE)
-adjust_vals[11]
-adjust_vals[3]
+adjust_vals[5]
+adjust_vals[2]
 
 # Minimizing P(B=1|S=1, A=0), P(B=1|S=1, A=1) summed abs error
 new_params$om.1=global_params$om.1 + 0
-new_params$om.2 = global_params$om.2 -1.6
+new_params$om.2 = global_params$om.2 -1.5
 calib_assist2(new_params)
 
 ```
@@ -126,16 +129,21 @@ Below, I print out simulated results of probabilities we have from the literatur
 attributes_by_S <- df %>% 
   group_by(S) %>% 
   summarise("P(B=1 | S)" = mean(b),
+            "sd1"=sd(b),
             "P(SSP=1 | S)" = mean(X1),
+            "sd2"=sd(X1),
             "P(system=1 | S)" = mean(X2),
-            "P(A=1 | S)" = mean(A)
+            "sd3"=sd(X2),
+            "P(A=1 | S)" = mean(A),
+            "sd4"=sd(A)
             ) 
 
 # proportion Black in CPC+ and non-CPC+ participants within CPC+ regions
 race_by_participation <- df %>% 
   filter(S==1) %>% 
   group_by(A) %>%
-  summarise("P(B=1 | S=1,A)" = mean(b)
+  summarise("P(B=1 | S=1,A)" = mean(b),
+            "sd" = sd(b)
             ) 
 
 # Proportion treated in SSP, in system, and overall
@@ -143,24 +151,31 @@ prop_treated <- bind_cols(
   (
     df %>% 
       filter(S==1,X1==0) %>% 
-      summarise(prop_noSSP_treated = mean(A)) ),
+      summarise(prop_noSSP_treated = mean(A), sd1 = sd(A)) ),
   (
     df %>% 
       filter(S==1,X1==1) %>% 
-      summarise(prop_SSP_treated = mean(A)) ),
+      summarise(prop_SSP_treated = mean(A), sd2 = sd(A) ) ),
   (
     df %>% 
       filter(S==1,X2==0) %>% 
-      summarise(prop_nosys_treated = mean(A)) ),
+      summarise(prop_nosys_treated = mean(A), sd3 = sd(A)) ),
   (
     df %>% 
       filter(S==1,X2==1) %>% 
-      summarise(prop_sys_treated = mean(A)) )
+      summarise(prop_sys_treated = mean(A), sd4 = sd(A)) )
   ) %>% 
-  `colnames<-`(c("P(A=1 | SSP=0, S=1)", "P(A=1 | SSP=1, S=1)", "P(A=1| sys=0, S=1)", "P(A=1 | sys=1, S=1)"))
+  `colnames<-`(c("P(A=1 | SSP=0, S=1)","sd1", "P(A=1 | SSP=1, S=1)", "sd2","P(A=1| sys=0, S=1)", "sd3","P(A=1 | sys=1, S=1)","sd4"))
 
 knitr::kable(attributes_by_S, caption = "B, SSP, System, and A by CPC+ or non-CPC+ region")
-knitr::kable(race_by_participation, caption = "Race by CPC+ Participation")
 knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation by System/SSP status")
+knitr::kable(race_by_participation, caption = "Race by CPC+ Participation")
 
 ```
+
+
+```{r}
+#Summarize in one table
+
+```
+

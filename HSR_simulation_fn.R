@@ -12,9 +12,9 @@ global_params <- data.frame(
                             x2.r = -.715,
                             phi.1= -.18, phi.2=-.06, 
                             
-                            q= -1.68,
+                            q= -1.38,
                             om.1= -.165,
-                            om.2= -1.7,
+                            om.2= -3.2,
                             om.3= -.235,
                             
                             H = 0, sigma.H = 0.02,

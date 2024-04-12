@@ -7,31 +7,29 @@ save.figs <- TRUE
 
 ## Combine params that vary and params that are fixed
 global_params <- data.frame(expand.grid(
-  x1.r = -.64, 
-  x2.r = -.74,
+  x1.r = -.617, 
+  x2.r = -.715,
   phi.1= c(-.17,.17), # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
   phi.2= c(-.14,.14), # log odds ratio of Pr(system) in CPC+ vs non-CPC+
   
-  q= -2.12,
+  q= -1.38,
   om.1= c(-.25,.25), #log odds ratio of Pr(Black) in SSP vs non-SSP
   om.2= c(-.23,.23), #log odds ratio of Pr(Black) in system vs indep
-  om.3= -.3,
+  om.3= -.235,
   
-  H = 0, sigma.H = 0.04,
+  H = 0, sigma.H = 0.02,
   psi.1=-.03, 
   
-  theta.P = -76, sigma.P =69, 
+  theta.P = -68.5, sigma.P =69, 
   gamma.3=  -16, 
   gamma.4 = 282, 
   gamma.5 = -277,
   
-  beta.0 = -2.51,
-  #beta.1=0,
-  #beta.2=0,
-  beta.3 = 0,
-  beta.4 = .809,
+  beta.0 = -3.05,
+  beta.3=0,
+  beta.4 = .839,
   beta.5 = 1.17,
-  beta.6 = .46, 
+  beta.6 = .778, 
   
   alpha.0 = 10100,
   alpha.1 = 46500, 
