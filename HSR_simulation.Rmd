@@ -15,6 +15,38 @@ We create a single instantiation of the simulation in this block:
 ```{r}
 source("HSR_simulation_fn.R", local = knitr::knit_global())
 source("HSR_param_calib.R", local = knitr::knit_global())
+global_params <- data.frame(
+  x1.r = -.617, 
+  x2.r = -.715,
+  phi.1= -.18, phi.2=-.06, 
+  
+  q= -1.38,
+  om.1= -.165,
+  om.2= -3.2,
+  om.3= -.235,
+  
+  H = 0, sigma.H = 0.02,
+  psi.1=-.03, 
+  
+  theta.P = -68.5, sigma.P =0, 
+  gamma.3=-92, 
+  gamma.4 = 206, 
+  gamma.5 = -87,
+  
+  beta.0 = -3.05,
+  beta.3=0,
+  beta.4 = .839,
+  beta.5 = 1.17,
+  beta.6 = .778, 
+  
+  alpha.0 = 10100,
+  alpha.1 = 46500 , 
+  alpha.2 = 600,
+  alpha.3 = 12,
+  
+  P= 1200 # number of practices in a region
+  
+)
 ```
 
 Here, I test our ability to estimate the PATT (using 3 estimators) and also calculate the true PATT: 

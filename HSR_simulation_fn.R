@@ -1,44 +1,8 @@
-library(boot)
-library(Rlab)
 library(tidyverse)
-library("reshape2") 
 
-# Defining parameters and functions for simulation study
+# Defining functions for simulation study
 
 ## DATA GENERATING MECHANISMS ##
-
-global_params <- data.frame(
-                            x1.r = -.617, 
-                            x2.r = -.715,
-                            phi.1= -.18, phi.2=-.06, 
-                            
-                            q= -1.38,
-                            om.1= -.165,
-                            om.2= -3.2,
-                            om.3= -.235,
-                            
-                            H = 0, sigma.H = 0.02,
-                            psi.1=-.03, 
-                            
-                            theta.P = -68.5, sigma.P =0, 
-                            gamma.3=-92, 
-                            gamma.4 = 206, 
-                            gamma.5 = -87,
-                            
-                            beta.0 = -3.05,
-                            beta.3=0,
-                            beta.4 = .839,
-                            beta.5 = 1.17,
-                            beta.6 = .778, 
-                            
-                            alpha.0 = 10100,
-                            alpha.1 = 46500 , 
-                            alpha.2 = 600,
-                            alpha.3 = 12,
-                            
-                            P= 1200 # number of practices in a region
-                            
-                            )
 
 # Generate region parameters
 # Including region_id, S
@@ -50,6 +14,13 @@ get_region_params <- function(id, global_params, in_sample = 0){
   return(region_params)
 } 
 
+inv.logit <- function(p){
+  return(exp(p)/(1+exp(p)))
+}
+
+rbern <- function(n, prob){
+  rbinom(n,size=1,prob=prob)
+}
 
 #' Generate simulation of universe of regions and practices
 make_regions <- function(global_params){
@@ -225,7 +196,7 @@ sim_patt <- function(default_params,var_name,var_seq,nsim){
 
 # Plots the results of sim_patt
 plot_patt <- function(results, var_name){
-  results_long <- melt(results, id = var_name) 
+  results_long <- melt(results, id = var_name)  #requires reshape2, not included right now
   plot_patt <- ggplot(results_long,
                       aes(x = get(var_name), 
                           y = value, 
