@@ -24,20 +24,39 @@ simanalyze <- function(params){
 }
 
 sumstats <- function(data){
-  # summary stats by {AxS}
+  # Calibration targets
+  # Pr(B|S), Pre(SSP|S), Pr(sys|S), Pr(A|S)
+  by.S <- data %>% group_by(scenario,replicate,S) %>%
+    # unweighted (practice-level) stats
+    summarize(Black=mean(b),
+              SSP=mean(X1),
+              sys=mean(X2),
+              A=mean(A)) %>%
+    mutate(S=factor(S,levels=c(1,0),labels=c('Sample','Target')))
+  # Pr(A|SSP=0,S=1), Pr(A|SSP=1,S=1), Pr(A|sys=0,S=1) , Pr(A=1,sys=1,S=1)
+  by.X <- data %>% filter(S==1) %>% group_by(scenario,replicate,X1) %>%
+    summarize(A=mean(A)) %>% rename(X=X1) %>% ungroup() %>%
+    mutate(X=factor(X,levels=c(0,1),labels=c('non-SSP','SSP'))) %>%
+    bind_rows(data %>% filter(S==1) %>% group_by(scenario,replicate,X2) %>%
+                summarize(A=mean(A)) %>% rename(X=X2) %>% ungroup() %>%
+                mutate(X=factor(X,levels=c(0,1),labels=c('independent','system')))) %>%
+    mutate(X=factor(X,levels=c('non-SSP','SSP','independent','system')))
+  # Pr(B|S=1,A)
+  by.A <- data %>% filter(S==1) %>% group_by(scenario,replicate,A) %>%
+    summarize(Black=mean(b)) %>%
+    mutate(A=factor(A,levels=c(0,1),labels=c('Untreated','Treated')))
+  
+  # W by {AxS}
   by.AS <- data %>%
     group_by(scenario,replicate,group,trt)  %>%
     # Weighted by their importance to Black benes
-    summarize(pct.Black=weighted.mean(b,w=wt)*100,
-              non.indep=weighted.mean(W==1,w=wt)*100,
+    summarize(non.indep=weighted.mean(W==1,w=wt)*100,
               non.sys=weighted.mean(W==2,w=wt)*100,
               ssp.indep=weighted.mean(W==3,w=wt)*100,
               ssp.sys=weighted.mean(W==4,w=wt)*100)
-  by.AS.long <- by.AS %>% pivot_longer(5:9) %>% 
-    mutate(name=factor(name,levels=c('pct.Black',
-                                     'non.indep','non.sys','ssp.indep','ssp.sys'),
-                       labels=c('% Black',
-                                'Non-SSP, independent','Non-SSP, system',
+  by.AS.long <- by.AS %>% pivot_longer(5:8) %>% 
+    mutate(name=factor(name,levels=c('non.indep','non.sys','ssp.indep','ssp.sys'),
+                       labels=c('Non-SSP, independent','Non-SSP, system',
                                 'SSP, independent','SSP, system')))
   # Differences between Target and Sample
   diff.by.AS.long <- filter(by.AS.long,trt=="Treated") %>% 
@@ -49,7 +68,12 @@ sumstats <- function(data){
   scenario.order <- (diff.by.AS.long %>% filter(name=="Non-SSP, system") %>% 
                        group_by(scenario) %>% summarize(median=quantile(diff,p=0.5)) %>% 
                        arrange(median))$scenario
-  
+  by.S <- by.S %>%
+    mutate(scenario=factor(scenario,levels=scenario.order,labels=1:length(scenario.order)))
+  by.X <- by.X %>%
+    mutate(scenario=factor(scenario,levels=scenario.order,labels=1:length(scenario.order)))
+  by.A <- by.A %>% 
+    mutate(scenario=factor(scenario,levels=scenario.order,labels=1:length(scenario.order)))
   by.AS <- by.AS %>% 
     mutate(scenario=factor(scenario,levels=scenario.order,labels=1:length(scenario.order)))
   by.AS.long <- by.AS.long %>%
@@ -57,20 +81,52 @@ sumstats <- function(data){
   diff.by.AS.long <- diff.by.AS.long %>%
     mutate(scenario=factor(scenario,levels=scenario.order,labels=1:length(scenario.order)))
   
-  return(list('by.AS'=by.AS,'by.AS.long'=by.AS.long,
-              'diff.by.AS.long'=diff.by.AS.long,'scenario.order'=scenario.order))
+  return(list('by.S'=by.S,'by.X'=by.X,'by.A'=by.A,
+              'by.AS'=by.AS,'by.AS.long'=by.AS.long,'diff.by.AS.long'=diff.by.AS.long,
+              'scenario.order'=scenario.order))
+}
+
+calibplots <- function(sumstats,save.figs){
+  by.S.targets <- tibble(S=c('Target','Sample'),
+                         'Black'=c(.146,.12),
+                         'SSP'=c(.35,.31),
+                         'sys'=c(.33,.316),
+                         'A'=c(.1,.18)) %>% pivot_longer(2:5)
+  panelA <- ggplot(sumstats$by.S %>% pivot_longer(4:7),aes(x=name,y=value,group=interaction(S,name))) + 
+    geom_boxplot(aes(col=S),position=position_dodge(width=1)) +
+    geom_point(data=by.S.targets,aes(x=name,y=value,col=S,group=interaction(S,name)),
+               shape=8,size=2,position=position_dodge(width=1)) + 
+    #scale_y_continuous(limits=c(0,1)) + 
+    labs(x="",y="Proportion",color="") + theme(legend.position="bottom")
+  if(save.figs) ggsave("calib_by_S.png",width=6,height=4) else print(panelA)
+  
+  by.X.targets <- tibble(X=c('non-SSP','SSP','independent','system'),
+                         A=c(.141,.269,.121,.309))
+  panelB <- ggplot(sumstats$by.X,aes(x=X,y=A)) + geom_boxplot(aes(col=X)) +
+    geom_point(data=by.X.targets,aes(x=X,y=A,col=X,group=X),shape=8,size=2) +
+    #scale_y_continuous(limits=c(0,1)) + 
+    scale_color_discrete(guide="none") + labs(x="",y="Proportion treated")
+  if (save.figs) ggsave("calib_by_X.png",width=6,height=4) else print(panelB)
+  
+  by.A.targets <- tibble(A=c('Untreated','Treated'),
+                         Black=c(.131,.069))
+  panelC <- ggplot(sumstats$by.A,aes(x=A,y=Black)) + geom_boxplot(aes(col=A)) +
+    geom_point(data=by.A.targets,aes(x=A,y=Black,col=A),shape=8,size=2) +
+    #scale_y_continuous(limits=c(0,1)) + 
+    scale_color_discrete(guide="none") + labs(x="",y="Proportion Black",col="")
+  if (save.figs) ggsave("calib_by_A.png",width=6,height=4) else print(panelC)
 }
 
 datplots <- function(sumstats,save.figs,prefix){
   theme_set(theme_minimal())
   ## Practice characteristics in sample and target
-  panelA <- ggplot(filter(sumstats$by.AS.long,trt=="Treated",name!="% Black"),aes(x=value,y=name)) + 
+  panelA <- ggplot(filter(sumstats$by.AS.long,trt=="Treated"),aes(x=value,y=name)) + 
     geom_boxplot(aes(col=group),position=position_dodge(width=1)) + facet_wrap(~scenario) +
     labs(x="Percent",y="",color="") + theme(legend.position="bottom")
   if (save.figs) ggsave(paste0(prefix,"_","W_dist.png"),panelA,width=8,height=6) else print(panelA)
   
   # Difference in practice characteristics between sample and target
-  panelB <- ggplot(filter(sumstats$diff.by.AS.long,name!="% Black"),aes(y=diff,x=scenario)) + 
+  panelB <- ggplot(filter(sumstats$diff.by.AS.long),aes(y=diff,x=scenario)) + 
     geom_boxplot() + geom_hline(yintercept=0) + facet_wrap(~name) +
     labs(y="Difference in Percent (target - sample)",x="Simulation Scenario")
   if (save.figs) ggsave(paste0(prefix,"_","W_diff_dist_by_W.png"),width=8,height=6) else print(panelB)
