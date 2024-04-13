@@ -2,30 +2,30 @@
 library(tidyverse)
 source("HSR_simulation_fn.R")
 source("HSR_plot_fn.R")
-NREP <- 10
+NREP <- 50
 
 #### Base case ####
 ## Final calibrated params
 base_params <- data.frame(
   x1.r = -.617, 
   x2.r = -.715,
-  phi.1= -.18, phi.2=-.06, 
+  phi.1 = -.18, phi.2=-.06, 
   
-  q= -1.38,
-  om.1= -.165,
-  om.2= -3.2,
-  om.3= -.235,
+  q = -1.28,
+  om.1 = -1,
+  om.2 = -1,
+  om.3 = -.235,
   
   H = 0, sigma.H = 0.02,
-  psi.1=-.03, 
+  psi.1 = -.03, 
   
-  theta.P = -68.5, sigma.P =0, 
-  gamma.3= -92, 
+  theta.P = -68.5, sigma.P = 0, 
+  gamma.3 = -92, 
   gamma.4 = 206, 
   gamma.5 = -87,
   
   beta.0 = -3.05,
-  beta.3=0,
+  beta.3 = 0,
   beta.4 = .839,
   beta.5 = 1.17,
   beta.6 = .778, 
@@ -41,6 +41,7 @@ base_params <- data.frame(
 
 base_simdat <- simanalyze(base_params)
 base_sumstats <- sumstats(base_simdat$data)
+calibplots(base_sumstats,save.figs=T)
 datplots(base_sumstats,save.figs=T,prefix="base")
 estplots(base_simdat$ests,base_sumstats,save.figs=T,prefix="base")
 
@@ -51,27 +52,27 @@ scenario_params <- data.frame(expand.grid(
   phi.1= c(-.18,.18),  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
   phi.2=c(-.06,.06),   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
   
-  q= -1.38,
-  om.1= -.165,
-  om.2= c(-3.2,3.2),  # log odds ratio of Pr(Black) in SSP vs non-SSP
-  om.3= c(-.235,.235),# log odds ratio of Pr(Black) in system vs indep
+  q= -1.28,
+  om.1 = c(-1,1),  # log odds ratio of Pr(Black) in SSP vs non-SSP
+  om.2 = c(-1,1), # log odds ratio of Pr(Black) in system vs indep
+  om.3 = -.235,
   
   H = 0, sigma.H = 0.02,
-  psi.1=-.03, 
+  psi.1 = -.03, 
   
   theta.P = -68.5, sigma.P =0, 
-  gamma.3=-92, 
+  gamma.3 = -92, 
   gamma.4 = 206, 
   gamma.5 = -87,
   
   beta.0 = -3.05,
-  beta.3=0,
+  beta.3 = 0,
   beta.4 = .839,
   beta.5 = 1.17,
   beta.6 = .778, 
   
   alpha.0 = 10100,
-  alpha.1 = 46500 , 
+  alpha.1 = 46500, 
   alpha.2 = 600,
   alpha.3 = 12,
   
@@ -83,6 +84,8 @@ scenario_simdat <- simanalyze(scenario_params)
 scenario_sumstats <- sumstats(scenario_simdat$data)
 datplots(scenario_sumstats,save.figs=T,prefix="scenario")
 estplots(scenario_simdat$ests,scenario_sumstats,save.figs=T,prefix="scenario")
+
+scenario_params %>% filter(replicate==1) %>% select(scenario,phi.1,phi.2,om.1,om.2)
 
 # For reporting in the text:
 # Scenario 1 and 16 are always labelled as the scenarios with the smallest and largest gaps in non-SSP,system
@@ -103,9 +106,9 @@ violation_params <- data.frame(expand.grid(
   x2.r = -.715,
   phi.1= -.18, phi.2=-.06, 
   
-  q= -1.38,
-  om.1= -.165,
-  om.2= -3.2,
+  q= -1.28,
+  om.1= -1,
+  om.2= -1,
   om.3= -.235,
   
   H = 0, sigma.H = 0.02,
