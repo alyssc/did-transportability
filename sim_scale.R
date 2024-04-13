@@ -7,15 +7,10 @@ myCluster <- makeCluster(3,
                          type = "PSOCK") # starts new R session here
 registerDoParallel(myCluster)
 
-# Important relevant packages and functions
-library(tidyverse)
 source("HSR_simulation_fn.R")
-theme_set(theme_minimal())
-# Flag for saving figures to disk
-save.figs <- F
 
-
-output <- foreach(r = c(1:2), .combine = 'rbind') %dopar% {
+nreps <- 2
+output <- foreach(r = c(1:nreps), .packages=c('tidyverse'), .combine = 'rbind') %dopar% {
   
   # Fixed and varied parameters
   global_params <- data.frame(expand.grid(
@@ -52,10 +47,6 @@ output <- foreach(r = c(1:2), .combine = 'rbind') %dopar% {
     replicate=r)) %>%
     mutate(scenario=rep(1:16))
 
-  # What are the scenarios?
-  if (save.figs & r == 1) write_csv(global_params %>% select(scenario,phi.1,phi.2,om.1,om.2),
-                           file="param_combos.csv")
-
   ## Simulate the data
   simdat <- global_params %>% group_by(scenario,replicate) %>%
     nest() %>% mutate(singlesim=map(data,make_regions)) %>%
@@ -81,7 +72,6 @@ output <- foreach(r = c(1:2), .combine = 'rbind') %dopar% {
 }
 
 stopCluster(myCluster)
-
 
 
 
