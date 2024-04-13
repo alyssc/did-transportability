@@ -23,9 +23,13 @@ CALIBRATION
 Calibrating first set of parameters:
 
 ```{r}
+# Demonstrating current error
 new_params = global_params
 calib_assist(new_params)
 
+# I ran this with multiple sequences in order to come up with the best adjustment for targets in calib table 1, 
+# which is now incorporated into global_params
+# Not shown: adjustment for targets other than q (I just changed and ran the code in place)
 for(adjust1 in seq(.32,.34,.002) ){
   new_params$q= global_params$q + adjust1
   print(c(adjust1, calib_assist(new_params)[1,"P(B=1 | S)"] ))
@@ -34,6 +38,8 @@ for(adjust1 in seq(.32,.34,.002) ){
 
 
 ```{r}
+# Exploring the relationship between om.1/om.2 and different summary statistics
+
 # Scenario: Fewer Black patients in SSP/system hospitals
 new_params$om.1= -.165
 new_params$om.2= -.097
@@ -63,7 +69,7 @@ Now calibrating second table of parameters:
 new_params = global_params
 calib_assist1(new_params)
 
-#Search
+#Search for best adjustment for beta.5
 for(adjust1 in seq(0,.5,.1) ){
   new_params$beta.5= global_params$beta.5 + adjust1
   print(c(adjust1, calib_assist1(new_params)[3],  calib_assist1(new_params)[4]))
@@ -74,7 +80,15 @@ for(adjust1 in seq(0,.5,.1) ){
 Calibrating table 3: 
 
 ```{r}
+# Goal: minimize P(B=1|S=1, A=0), P(B=1|S=1, A=1) summed abs error
+
 new_params = global_params
+
+# Now searching for the best adjustment of om.1/om.2 simultaneously, 
+# to try to adjust them at similar scales. 
+# Not shown: re-running with different adjust_vals sequences
+# Note that global_params is now updated with the adjustment, 
+# so the sequence below will not really make sense
 
 adjust_vals <- seq(-2,1,.5 )
 n <- length(adjust_vals)
@@ -83,19 +97,20 @@ for(i in c(1:n) ){
   for(j in c(1:n) ){
     new_params$om.1= global_params$om.1 + adjust_vals[i]
     new_params$om.2 = global_params$om.2 + adjust_vals[j]
+    
+    # minimizing summed absolute error of both targets
     calib_errs[i,j] = abs(calib_assist2(new_params)[1,2])+abs(calib_assist2(new_params)[2,2])
   }
 }
 
-calib_errs
-which(abs(calib_errs) == min(abs(calib_errs)),arr.ind = TRUE)
-adjust_vals[5]
-adjust_vals[2]
+# In the above example round of adjustment (with an outdated global_params),
+# we found that calib_errs[5,2] was the smallest
+which(abs(calib_errs) == min(abs(calib_errs)),arr.ind = TRUE) # was 5,2
+adjust_vals[5] # adjustment: 0
+adjust_vals[2] # adjustment: -1.5
 
-# Minimizing P(B=1|S=1, A=0), P(B=1|S=1, A=1) summed abs error
-new_params$om.1=global_params$om.1 + 0
-new_params$om.2 = global_params$om.2 -1.5
-calib_assist2(new_params)
+# Not shown: updating global_params to reflect adjustments
+calib_assist2(global_params)
 
 ```
 

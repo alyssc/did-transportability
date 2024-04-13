@@ -87,7 +87,7 @@ stopCluster(myCluster)
 
 
 # Fixed params
-baseline_params <- data.frame(
+global_params <- data.frame(
   x1.r = -.617, 
   x2.r = -.715,
   phi.1= -.18, phi.2=-.06, 
