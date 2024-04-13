@@ -9,7 +9,7 @@ registerDoParallel(myCluster)
 
 source("HSR_simulation_fn.R")
 
-nreps <- 2
+nreps <- 1000
 output <- foreach(r = c(1:nreps), .packages=c('tidyverse'), .combine = 'rbind') %dopar% {
   
   # Fixed and varied parameters
@@ -43,7 +43,7 @@ output <- foreach(r = c(1:nreps), .packages=c('tidyverse'), .combine = 'rbind') 
     alpha.2 = 600,
     alpha.3 = 12,
 
-    P= 5, # number of practices in a region
+    P= 1200, # number of practices in a region
     replicate=r)) %>%
     mutate(scenario=rep(1:16))
 
