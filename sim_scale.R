@@ -1,54 +1,56 @@
 ## Scaling up the simulation
 library(foreach)
 library(doParallel)
-
-# Parallelization
-myCluster <- makeCluster(3, 
-                         type = "PSOCK") # starts new R session here
-registerDoParallel(myCluster)
-
 source("HSR_simulation_fn.R")
 
 nreps <- 1000
-output <- foreach(r = c(1:nreps), .packages=c('tidyverse'), .combine = 'rbind') %dopar% {
+
+scenario_params <- data.frame(expand.grid(
+  x1.r = -.617, 
+  x2.r = -.715,
+  phi.1= c(-.18,.18),  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
+  phi.2=c(-.06,.06),   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
   
-  # Fixed and varied parameters
-  global_params <- data.frame(expand.grid(
-    x1.r = -.617,
-    x2.r = -.715,
-    phi.1= c(-.17,.17), # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
-    phi.2= c(-.14,.14), # log odds ratio of Pr(system) in CPC+ vs non-CPC+
+  q= -1.28,
+  om.1 = c(-1,1),  # log odds ratio of Pr(Black) in SSP vs non-SSP
+  om.2 = c(-1,1), # log odds ratio of Pr(Black) in system vs indep
+  om.3 = -.235,
+  
+  H = 0, sigma.H = 0.02,
+  psi.1 = -.03, 
+  
+  theta.P = -68.5, sigma.P = 69, 
+  gamma.3 = -92, 
+  gamma.4 = 206, 
+  gamma.5 = -87,
+  
+  beta.0 = -3.05,
+  beta.3 = 0,
+  beta.4 = .839,
+  beta.5 = 1.17,
+  beta.6 = .778, 
+  
+  alpha.0 = 10100,
+  alpha.1 = 46500, 
+  alpha.2 = 600,
+  alpha.3 = 12,
+  
+  P= 1200)) %>%
+  mutate(scenario=c(1:16))
 
-    q= -1.38,
-    om.1= c(-.25,.25), #log odds ratio of Pr(Black) in SSP vs non-SSP
-    om.2= c(-.23,.23), #log odds ratio of Pr(Black) in system vs indep
-    om.3= -.235,
+# Helper function to rbind the lists
+comb <- function(...) {
+  mapply('rbind', ..., SIMPLIFY=FALSE)
+}
 
-    H = 0, sigma.H = 0.02,
-    psi.1=-.03,
+# Parallelization
 
-    theta.P = -76, sigma.P =69,
-    gamma.3=  -16,
-    gamma.4 = 282,
-    gamma.5 = -277,
-
-    beta.0 = -3.05,
-    beta.3=0,
-    beta.4 = .839,
-    beta.5 = 1.17,
-    beta.6 = .778,
-
-    alpha.0 = 10100,
-    alpha.1 = 46500,
-    alpha.2 = 600,
-    alpha.3 = 12,
-
-    P= 1200, # number of practices in a region
-    replicate=r)) %>%
-    mutate(scenario=rep(1:16))
-
+myCluster <- makeCluster(100) 
+registerDoParallel(myCluster)
+start <- Sys.time()
+output <- foreach(r = c(1:nreps), .packages=c('tidyverse'), .combine = 'comb',.multicombine = TRUE) %dopar% {
   ## Simulate the data
-  simdat <- global_params %>% group_by(scenario,replicate) %>%
+  simdat <- scenario_params %>% mutate(replicate=r) %>% group_by(scenario,replicate) %>%
     nest() %>% mutate(singlesim=map(data,make_regions)) %>%
     unnest(cols=c(data,singlesim)) %>%
     mutate(group=factor(S,levels=c('1','0'),labels=c('Sample','Target')),
@@ -56,7 +58,7 @@ output <- foreach(r = c(1:nreps), .packages=c('tidyverse'), .combine = 'rbind') 
     group_by(scenario,replicate,S) %>%
     mutate(total.Black=sum(B)) %>% ungroup() %>%
     mutate(wt=B/total.Black) # proportion of all Black benes w/in {S}
-
+  stats <- sumstats(simdat)
 
   ## Truth and estimates of the SATT and PATT across simulation reps
   estimates <- simdat %>% group_by(scenario,replicate) %>%
@@ -68,45 +70,17 @@ output <- foreach(r = c(1:nreps), .packages=c('tidyverse'), .combine = 'rbind') 
            satt.err=est.satt-true.satt,
            true.diff=true.patt-true.satt,
            est.diff=dr - est.satt)
-  return(estimates)
+  return(list('sumstats'=stats,'ests'=estimates))
 }
-
+stop <- Sys.time()
 stopCluster(myCluster)
+stop-start
 
-
-
-
-# Fixed params
-global_params <- data.frame(
-  x1.r = -.617, 
-  x2.r = -.715,
-  phi.1= -.18, phi.2=-.06, 
-  
-  q= -1.38,
-  om.1= -.165,
-  om.2= -3.2,
-  om.3= -.235,
-  
-  H = 0, sigma.H = 0.02,
-  psi.1=-.03, 
-  
-  theta.P = -76, sigma.P =0, 
-  gamma.3=-92, 
-  gamma.4 = 206, 
-  gamma.5 = -87,
-  
-  beta.0 = -3.05,
-  beta.3=0,
-  beta.4 = .839,
-  beta.5 = 1.17,
-  beta.6 = .778, 
-  
-  alpha.0 = 10100,
-  alpha.1 = 46500 , 
-  alpha.2 = 600,
-  alpha.3 = 12,
-  
-  P= 1200 # number of practices in a region
-  
-)
-
+#quick and dirty repackaging of the results object
+output$sumstats <- list('by.S'=do.call("rbind",output$sumstats[,'by.S']),
+                        'by.X'=do.call("rbind",output$sumstats[,'by.X']),
+                        'by.A'=do.call("rbind",output$sumstats[,'by.A']),
+                        'by.AS'=do.call("rbind",output$sumstats[,'by.AS']),
+                        'by.AS.long'=do.call("rbind",output$sumstats[,'by.AS.long']),
+                        'diff.by.AS.long'=do.call("rbind",output$sumstats[,'diff.by.AS.long']))
+save(output,file="2024-04-13_HSR_results.RData")
