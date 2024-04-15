@@ -53,3 +53,37 @@ estplots <- function(ests,sumstats,save.figs,prefix,order){
     theme(legend.position="bottom")
   if (save.figs) ggsave(paste0(prefix,"_","PATT_minus_SATT.png"),width=6,height=4) else print(panelC)
 }
+
+calibplots <- function(sumstats,save.figs,which.base){
+  by.S.targets <- tibble(S=c('Target','Sample'),
+                         'Black'=c(.146,.12),
+                         'SSP'=c(.35,.31),
+                         'sys'=c(.33,.316),
+                         'A'=c(.1,.18)) %>% pivot_longer(2:5)
+  panelA <- ggplot(sumstats$by.S %>% filter(scenario==which.base) %>% pivot_longer(4:7),
+                   aes(x=name,y=value,group=interaction(S,name))) + 
+    geom_boxplot(aes(col=S),position=position_dodge(width=1)) +
+    geom_point(data=by.S.targets,aes(x=name,y=value,col=S,group=interaction(S,name)),
+               shape=8,size=2,position=position_dodge(width=1)) + 
+    #scale_y_continuous(limits=c(0,1)) + 
+    labs(x="",y="Proportion",color="") + theme(legend.position="bottom")
+  if(save.figs) ggsave("calib_by_S.png",width=6,height=4) else print(panelA)
+  
+  by.X.targets <- tibble(X=c('non-SSP','SSP','independent','system'),
+                         A=c(.141,.269,.121,.309))
+  panelB <- ggplot(sumstats$by.X %>% filter(scenario==which.base) ,aes(x=X,y=A)) + 
+    geom_boxplot(aes(col=X)) +
+    geom_point(data=by.X.targets,aes(x=X,y=A,col=X,group=X),shape=8,size=2) +
+    scale_y_continuous(limits=c(0,1)) + 
+    scale_color_discrete(guide="none") + labs(x="",y="Proportion treated")
+  if (save.figs) ggsave("calib_by_X.png",width=6,height=4) else print(panelB)
+  
+  by.A.targets <- tibble(A=c('Untreated','Treated'),
+                         Black=c(.131,.069))
+  panelC <- ggplot(sumstats$by.A %>% filter(scenario==which.base),aes(x=A,y=Black)) + 
+    geom_boxplot(aes(col=A)) +
+    geom_point(data=by.A.targets,aes(x=A,y=Black,col=A),shape=8,size=2) +
+    scale_y_continuous(limits=c(0,1)) + 
+    scale_color_discrete(guide="none") + labs(x="",y="Proportion Black",col="")
+  if (save.figs) ggsave("calib_by_A.png",width=6,height=4) else print(panelC)
+}
