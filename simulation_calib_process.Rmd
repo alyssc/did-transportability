@@ -8,8 +8,14 @@ output: html_notebook
 ```{r, include=FALSE}
 library(boot)
 library(Rlab)
+library(tidyverse)
 #library(ramify)
 options(digits=3)
+
+source("HSR_simulation_fn.R", local = knitr::knit_global())
+source("HSR_param_calib.R", local = knitr::knit_global())
+df <- make_regions(global_params)
+df <- tibble::as_tibble(df)
 ```
 
 CALIBRATION
@@ -17,25 +23,29 @@ CALIBRATION
 Calibrating first set of parameters:
 
 ```{r}
+# Demonstrating current error
 new_params = global_params
 calib_assist(new_params)
 
-for(adjust1 in seq(0,.02,.005) ){
-  new_params$phi.2= global_params$phi.2 + adjust1
-  print(c(adjust1, calib_assist(new_params)[2,"P(system | S)"] ))
+# I ran this with multiple sequences in order to come up with the best adjustment for targets in calib table 1, 
+# which is now incorporated into global_params
+# Not shown: adjustment for targets other than q (I just changed and ran the code in place)
+for(adjust1 in seq(.32,.34,.002) ){
+  new_params$q= global_params$q + adjust1
+  print(c(adjust1, calib_assist(new_params)[1,"P(B=1 | S)"] ))
 }
 ```
 
 
 ```{r}
+# Exploring the relationship between om.1/om.2 and different summary statistics
+
 # Scenario: Fewer Black patients in SSP/system hospitals
 new_params$om.1= -.165
 new_params$om.2= -.097
 #new_params$beta.4 = .809
 #new_params$beta.5 = 1.17
 
-df <- make_regions(new_params)
-df <- tibble::as_tibble(df)
 df %>% 
   filter(S==1) %>% group_by(X1) %>% 
   #group_by(S) %>%
@@ -59,7 +69,7 @@ Now calibrating second table of parameters:
 new_params = global_params
 calib_assist1(new_params)
 
-#Search
+#Search for best adjustment for beta.5
 for(adjust1 in seq(0,.5,.1) ){
   new_params$beta.5= global_params$beta.5 + adjust1
   print(c(adjust1, calib_assist1(new_params)[3],  calib_assist1(new_params)[4]))
@@ -70,28 +80,37 @@ for(adjust1 in seq(0,.5,.1) ){
 Calibrating table 3: 
 
 ```{r}
+# Goal: minimize P(B=1|S=1, A=0), P(B=1|S=1, A=1) summed abs error
+
 new_params = global_params
 
-adjust_vals <- seq(-2,0,.2 )
+# Now searching for the best adjustment of om.1/om.2 simultaneously, 
+# to try to adjust them at similar scales. 
+# Not shown: re-running with different adjust_vals sequences
+# Note that global_params is now updated with the adjustment, 
+# so the sequence below will not really make sense
+
+adjust_vals <- seq(-2,1,.5 )
 n <- length(adjust_vals)
 calib_errs <- matrix(NA, nrow = n, ncol = n)
 for(i in c(1:n) ){
   for(j in c(1:n) ){
     new_params$om.1= global_params$om.1 + adjust_vals[i]
     new_params$om.2 = global_params$om.2 + adjust_vals[j]
+    
+    # minimizing summed absolute error of both targets
     calib_errs[i,j] = abs(calib_assist2(new_params)[1,2])+abs(calib_assist2(new_params)[2,2])
   }
 }
 
-calib_errs
-which(abs(calib_errs) == min(abs(calib_errs)),arr.ind = TRUE)
-adjust_vals[11]
-adjust_vals[3]
+# In the above example round of adjustment (with an outdated global_params),
+# we found that calib_errs[5,2] was the smallest
+which(abs(calib_errs) == min(abs(calib_errs)),arr.ind = TRUE) # was 5,2
+adjust_vals[5] # adjustment: 0
+adjust_vals[2] # adjustment: -1.5
 
-# Minimizing P(B=1|S=1, A=0), P(B=1|S=1, A=1) summed abs error
-new_params$om.1=global_params$om.1 + 0
-new_params$om.2 = global_params$om.2 -1.6
-calib_assist2(new_params)
+# Not shown: updating global_params to reflect adjustments
+calib_assist2(global_params)
 
 ```
 
@@ -110,13 +129,68 @@ df %>%
 Calibrating to JAMA paper outcomes: 
 
 ```{r}
-lm.1 <- lm.did(df,plot=T)
+new_params = global_params
+new_params$theta.P = global_params$theta.P +7.5
+df <- make_regions(new_params)
+lm.did(df,plot=T)
+```
 
-# Effect of CPC+ participation on expenditures
-lm.1$coefficients["A"]
-plot.did(df)
+Below, I print out simulated results of probabilities we have from the literature that we can use to help calibrate our parameters. 
 
-head(df)
+```{r, echo=F}
+# Parameter calibration
+
+# Proportion Black benes, SSP, system, and treated in CPC+ and non-CPC+ regions
+attributes_by_S <- df %>% 
+  group_by(S) %>% 
+  summarise("P(B=1 | S)" = mean(b),
+            "sd1"=sd(b),
+            "P(SSP=1 | S)" = mean(X1),
+            "sd2"=sd(X1),
+            "P(system=1 | S)" = mean(X2),
+            "sd3"=sd(X2),
+            "P(A=1 | S)" = mean(A),
+            "sd4"=sd(A)
+            ) 
+
+# proportion Black in CPC+ and non-CPC+ participants within CPC+ regions
+race_by_participation <- df %>% 
+  filter(S==1) %>% 
+  group_by(A) %>%
+  summarise("P(B=1 | S=1,A)" = mean(b),
+            "sd" = sd(b)
+            ) 
+
+# Proportion treated in SSP, in system, and overall
+prop_treated <- bind_cols(
+  (
+    df %>% 
+      filter(S==1,X1==0) %>% 
+      summarise(prop_noSSP_treated = mean(A), sd1 = sd(A)) ),
+  (
+    df %>% 
+      filter(S==1,X1==1) %>% 
+      summarise(prop_SSP_treated = mean(A), sd2 = sd(A) ) ),
+  (
+    df %>% 
+      filter(S==1,X2==0) %>% 
+      summarise(prop_nosys_treated = mean(A), sd3 = sd(A)) ),
+  (
+    df %>% 
+      filter(S==1,X2==1) %>% 
+      summarise(prop_sys_treated = mean(A), sd4 = sd(A)) )
+  ) %>% 
+  `colnames<-`(c("P(A=1 | SSP=0, S=1)","sd1", "P(A=1 | SSP=1, S=1)", "sd2","P(A=1| sys=0, S=1)", "sd3","P(A=1 | sys=1, S=1)","sd4"))
+
+knitr::kable(attributes_by_S, caption = "B, SSP, System, and A by CPC+ or non-CPC+ region")
+knitr::kable(prop_treated, caption = "Proportion of CPC+ Participation by System/SSP status")
+knitr::kable(race_by_participation, caption = "Race by CPC+ Participation")
+
+```
+
+
+```{r}
+#Summarize in one table
 
 ```
 
