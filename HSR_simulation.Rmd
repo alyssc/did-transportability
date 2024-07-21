@@ -6,15 +6,17 @@ output: pdf_document
 ```{r, include=FALSE}
 library(boot)
 library(Rlab)
+library(tidyverse)
+
 #library(ramify)
 options(digits=3)
+source("HSR_simulation_fn.R", local = knitr::knit_global())
+
 ```
 
 We create a single instantiation of the simulation in this block: 
 
 ```{r}
-source("HSR_simulation_fn.R", local = knitr::knit_global())
-source("HSR_param_calib.R", local = knitr::knit_global())
 global_params <- data.frame(
   x1.r = -.617, 
   x2.r = -.715,
@@ -27,6 +29,8 @@ global_params <- data.frame(
   
   H = 0, sigma.H = 0.02,
   psi.1=-.03, 
+  psi.2 =0,
+  psi.3 = 0,
   
   theta.P = -68.5, sigma.P =0, 
   gamma.3=-92, 
@@ -70,10 +74,46 @@ plot.did(df)
 
 
 ```{r}
-df %>% 
-  ggplot( aes(x=U, color=factor(S, levels = c("0","1")),fill=factor(S, levels = c("0","1")))) + 
+# Assumption 11 violation
+viol_11 <- global_params
+viol_11$psi.1 <- 2
+viol_11$psi.2 <- 1
+viol_11$psi.3 <- 1
+
+df <- make_regions(viol_11)
+df <- tibble::as_tibble(df)
+
+# Looking at overlap of joint distribution of W and U between S=0, 1
+p <- ggplot( df, aes(x=U, color=factor(S, levels = c("0","1")),fill=factor(S, levels = c("0","1")))) + 
   geom_density(alpha=.3)
+p
+p + facet_wrap(~W)
+
+df %>% filter(W==1) %>% select(U) %>% summary()
+
 ```
+```{r}
+p <- ggplot( df, aes(x=U, color=factor(W),fill=factor(W))) + 
+  geom_density(alpha=.3)
+p
+p + facet_wrap(~S)
+```
+
+```{r}
+# Assumption 10 violation
+viol_10 <- global_params
+viol_10$gamma.6 <- 0
+viol_10$gamma.7 <- 0
+
+df <- make_regions(viol_10)
+df <- tibble::as_tibble(df)
+
+p <- ggplot( df, aes(x=delta, color=factor(S),fill=factor(S))) + 
+  geom_density(alpha=.3)
+p
+p + facet_wrap(~W)
+```
+
 
 ```{r}
 results <- sim_plot_patt(global_params,"psi.1",c(-.1,0,.1),nsim=5)
@@ -81,10 +121,10 @@ plot_patt(results, var_name = "psi.1")
 ```
 
 ```{r}
-p <- c( .1)
+p <- c( .345)
 log(p/(1-p))
 
-q <- c( .18) 
+q <- c( 0.00001) 
 log( (q*(1-p))/(p*(1-q)) )
 ```
 

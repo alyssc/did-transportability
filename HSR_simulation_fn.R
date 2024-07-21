@@ -1,5 +1,45 @@
 library(tidyverse)
 
+# Default global params
+global_params <- data.frame(
+  x1.r = -.617, 
+  x2.r = -.715,
+  phi.1= -.18, phi.2=-.06, 
+  
+  q= -1.38,
+  om.1= -1,
+  om.2= -1,
+  om.3= -.235,
+  
+  H = 0, sigma.H = 0.02,
+  psi.1=-.03, 
+  #psi.2 =0,
+  #psi.3 = 0,
+  #psi.4 =0,
+  #psi.5 = 0,
+  
+  theta.P = -68.5, sigma.P = 69,
+  gamma.3=-92, 
+  gamma.4 = 206, 
+  gamma.5 = -87,
+  #gamma.6 = 0,
+  #gamma.7 = 0,
+  
+  beta.0 = -3.05,
+  beta.3=0,
+  beta.4 = .839,
+  beta.5 = 1.17,
+  beta.6 = .778, 
+  
+  alpha.0 = 10100,
+  alpha.1 = 46500 , 
+  alpha.2 = 600,
+  alpha.3 = 12,
+  
+  P= 1200 # number of practices in a region
+  
+)
+
 # Defining functions for simulation study
 
 ## DATA GENERATING MECHANISMS ##
@@ -24,6 +64,22 @@ rbern <- function(n, prob){
 
 #' Generate simulation of universe of regions and practices
 make_regions <- function(global_params){
+  
+  # some parameters are new and may not be included in previously written params
+  if(is.null(global_params$gamma.6)){
+    global_params$gamma.6 = 0
+  }
+  if(is.null(global_params$gamma.7)){
+    global_params$gamma.7 = 0
+  }
+  if(is.null(global_params$psi.2)){
+    global_params$psi.2 = 0
+  }
+  if(is.null(global_params$psi.3)){
+    global_params$psi.3 = 0
+  }
+  print(global_params)
+  
   n_regions <- 50
   n_sregions <- 18 # number of CPC+ regions
   
@@ -65,11 +121,15 @@ make_regions <- function(global_params){
     B <- rbinom(P, n, inv.logit(params$q + params$om.1*X1 + params$om.2*X2 + params$om.3*S))
     b <- B/n
     
-    U <- rnorm(P, mean = params$H + params$psi.1*S, sd = params$sigma.H) # unobserved H
+    U <- rnorm(P, mean = params$H + params$psi.1*S + params$psi.2*X1 + params$psi.3*X2 
+               #+ params$psi.4*X1*S + params$psi.5*X2*S
+               , sd = params$sigma.H) # unobserved H
     # U.post <- rnorm(P, mean = params$H + params$psi.2, sd = params$sigma.H) #post-period unobserved H
     
     # make sure at least within range of ATT from JAMA paper
-    delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2 + params$gamma.5*X1*X2, sd = params$sigma.P)
+    delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2 + params$gamma.5*X1*X2 
+                   + params$gamma.6*X1*S + params$gamma.7*X2*S
+                   , sd = params$sigma.P)
     
     betas <- c(params$beta.0, params$beta.3, params$beta.4, params$beta.5, params$beta.6)
     trt.prob <- inv.logit(betas %*% rbind(1, U, X1, X2, S))
@@ -203,4 +263,6 @@ plot_patt <- function(results, var_name){
                           color = variable)) +  geom_line() 
   return(plot_patt)
 }
+
+
 

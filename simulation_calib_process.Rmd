@@ -25,14 +25,14 @@ Calibrating first set of parameters:
 ```{r}
 # Demonstrating current error
 new_params = global_params
-calib_assist(new_params)
+calib_assist1(new_params)
 
 # I ran this with multiple sequences in order to come up with the best adjustment for targets in calib table 1, 
 # which is now incorporated into global_params
 # Not shown: adjustment for targets other than q (I just changed and ran the code in place)
 for(adjust1 in seq(.32,.34,.002) ){
   new_params$q= global_params$q + adjust1
-  print(c(adjust1, calib_assist(new_params)[1,"P(B=1 | S)"] ))
+  print(c(adjust1, calib_assist1(new_params)[1,"P(B=1 | S)"] ))
 }
 ```
 
@@ -67,12 +67,12 @@ Now calibrating second table of parameters:
 
 ```{r}
 new_params = global_params
-calib_assist1(new_params)
+calib_assist2(new_params)
 
 #Search for best adjustment for beta.5
 for(adjust1 in seq(0,.5,.1) ){
   new_params$beta.5= global_params$beta.5 + adjust1
-  print(c(adjust1, calib_assist1(new_params)[3],  calib_assist1(new_params)[4]))
+  print(c(adjust1, calib_assist2(new_params)[3],  calib_assist2(new_params)[4]))
 }
 
 ```
@@ -99,7 +99,7 @@ for(i in c(1:n) ){
     new_params$om.2 = global_params$om.2 + adjust_vals[j]
     
     # minimizing summed absolute error of both targets
-    calib_errs[i,j] = abs(calib_assist2(new_params)[1,2])+abs(calib_assist2(new_params)[2,2])
+    calib_errs[i,j] = abs(calib_assist3(new_params)[1,2])+abs(calib_assist3(new_params)[2,2])
   }
 }
 
@@ -110,7 +110,7 @@ adjust_vals[5] # adjustment: 0
 adjust_vals[2] # adjustment: -1.5
 
 # Not shown: updating global_params to reflect adjustments
-calib_assist2(global_params)
+calib_assist3(global_params)
 
 ```
 
@@ -188,9 +188,4 @@ knitr::kable(race_by_participation, caption = "Race by CPC+ Participation")
 
 ```
 
-
-```{r}
-#Summarize in one table
-
-```
 

@@ -23,7 +23,7 @@ simanalyze <- function(params){
   return(list('data'=sim_data,'ests'=ests))
 }
 
-sumstats <- function(data){
+sumstats <- function(data, scenarios = 0){
   # Calibration targets
   # Pr(B|S), Pre(SSP|S), Pr(sys|S), Pr(A|S)
   by.S <- data %>% group_by(scenario,replicate,S) %>%
@@ -64,10 +64,15 @@ sumstats <- function(data){
     mutate(diff=Target-Sample) %>% 
     select(scenario,replicate,name,diff)
   
-  # Arrange scenarios by median difference in proportion of Non-SSP, system practices:
-  scenario.order <- (diff.by.AS.long %>% filter(name=="Non-SSP, system") %>% 
-                       group_by(scenario) %>% summarize(median=quantile(diff,p=0.5)) %>% 
-                       arrange(median))$scenario
+  if(scenarios == 0){
+    # Arrange scenarios by median difference in proportion of Non-SSP, system practices:
+    scenario.order <- (diff.by.AS.long %>% filter(name=="Non-SSP, system") %>% 
+                         group_by(scenario) %>% summarize(median=quantile(diff,p=0.5)) %>% 
+                         arrange(median))$scenario
+  }else{
+    scenario.order <- c(1:scenarios)
+  }
+  
   by.S <- by.S %>%
     mutate(scenario=factor(scenario,levels=scenario.order,labels=1:length(scenario.order)))
   by.X <- by.X %>%
@@ -98,7 +103,7 @@ calibplots <- function(sumstats,save.figs){
                shape=8,size=2,position=position_dodge(width=1)) + 
     #scale_y_continuous(limits=c(0,1)) + 
     labs(x="",y="Proportion",color="") + theme(legend.position="bottom")
-  if(save.figs) ggsave("calib_by_S.png",width=6,height=4) else print(panelA)
+  if(save.figs) ggsave("plots/calib_by_S.png",width=6,height=4) else print(panelA)
   
   by.X.targets <- tibble(X=c('non-SSP','SSP','independent','system'),
                          A=c(.141,.269,.121,.309))
@@ -106,7 +111,7 @@ calibplots <- function(sumstats,save.figs){
     geom_point(data=by.X.targets,aes(x=X,y=A,col=X,group=X),shape=8,size=2) +
     #scale_y_continuous(limits=c(0,1)) + 
     scale_color_discrete(guide="none") + labs(x="",y="Proportion treated")
-  if (save.figs) ggsave("calib_by_X.png",width=6,height=4) else print(panelB)
+  if (save.figs) ggsave("plots/calib_by_X.png",width=6,height=4) else print(panelB)
   
   by.A.targets <- tibble(A=c('Untreated','Treated'),
                          Black=c(.131,.069))
@@ -114,7 +119,7 @@ calibplots <- function(sumstats,save.figs){
     geom_point(data=by.A.targets,aes(x=A,y=Black,col=A),shape=8,size=2) +
     #scale_y_continuous(limits=c(0,1)) + 
     scale_color_discrete(guide="none") + labs(x="",y="Proportion Black",col="")
-  if (save.figs) ggsave("calib_by_A.png",width=6,height=4) else print(panelC)
+  if (save.figs) ggsave("plots/calib_by_A.png",width=6,height=4) else print(panelC)
 }
 
 datplots <- function(sumstats,save.figs,prefix){

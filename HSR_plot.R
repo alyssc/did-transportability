@@ -2,10 +2,10 @@
 library(tidyverse)
 source("HSR_simulation_fn.R")
 source("HSR_plot_fn.R")
-NREP <- 50
+NREP <- 25
 
 #### Base case ####
-## Final calibrated params
+## Final rated params
 base_params <- data.frame(
   x1.r = -.617, 
   x2.r = -.715,
@@ -18,11 +18,15 @@ base_params <- data.frame(
   
   H = 0, sigma.H = 0.02,
   psi.1 = -.03, 
+  psi.2 =0,
+  psi.3 = 0,
   
   theta.P = -68.5, sigma.P = 0, 
   gamma.3 = -92, 
   gamma.4 = 206, 
   gamma.5 = -87,
+  gamma.6=0,
+  gamma.7=0,
   
   beta.0 = -3.05,
   beta.3 = 0,
@@ -42,8 +46,8 @@ base_params <- data.frame(
 base_simdat <- simanalyze(base_params)
 base_sumstats <- sumstats(base_simdat$data)
 calibplots(base_sumstats,save.figs=T)
-datplots(base_sumstats,save.figs=T,prefix="base")
-estplots(base_simdat$ests,base_sumstats,save.figs=T,prefix="base")
+datplots(base_sumstats,save.figs=T,prefix="plots/base")
+estplots(base_simdat$ests,base_sumstats,save.figs=T,prefix="plots/base")
 
 #### 16 main scenarios ####
 scenario_params <- data.frame(expand.grid(
@@ -59,11 +63,15 @@ scenario_params <- data.frame(expand.grid(
   
   H = 0, sigma.H = 0.02,
   psi.1 = -.03, 
+  psi.2 =0,
+  psi.3 = 0,
   
   theta.P = -68.5, sigma.P =0, 
   gamma.3 = -92, 
   gamma.4 = 206, 
   gamma.5 = -87,
+  gamma.6=0,
+  gamma.7=0,
   
   beta.0 = -3.05,
   beta.3 = 0,
@@ -82,8 +90,8 @@ scenario_params <- data.frame(expand.grid(
 
 scenario_simdat <- simanalyze(scenario_params)
 scenario_sumstats <- sumstats(scenario_simdat$data)
-datplots(scenario_sumstats,save.figs=T,prefix="scenario")
-estplots(scenario_simdat$ests,scenario_sumstats,save.figs=T,prefix="scenario")
+datplots(scenario_sumstats,save.figs=T,prefix="plots/scenario")
+estplots(scenario_simdat$ests,scenario_sumstats,save.figs=T,prefix="plots/scenario")
 
 scenario_params %>% filter(replicate==1) %>% select(scenario,phi.1,phi.2,om.1,om.2)
 
@@ -100,8 +108,8 @@ scenario_simdat$ests %>% group_by(scenario) %>%
             true.satt=quantile(true.satt,0.5)) %>%
   filter(scenario%in%c(1,16))
 
-#### Near and complete Violations of Assumption 11 ####
-violation_params <- data.frame(expand.grid(
+#### Near and complete Violations of Assumption 10 ####
+viol_10 <- data.frame(expand.grid(
   x1.r = -.617, 
   x2.r = -.715,
   phi.1= -.18, phi.2=-.06, 
@@ -112,12 +120,16 @@ violation_params <- data.frame(expand.grid(
   om.3= -.235,
   
   H = 0, sigma.H = 0.02,
-  psi.1=c(-.03,.1,.2), 
+  psi.1 = -.03, 
+  psi.2 = 0,
+  psi.3 = 0,
   
   theta.P = -68.5, sigma.P =0, 
   gamma.3= -92, 
   gamma.4 = 206, 
   gamma.5 = -87,
+  gamma.6=c(0,200),
+  gamma.7=c(0,200),
   
   beta.0 = -3.05,
   beta.3=0,
@@ -132,14 +144,59 @@ violation_params <- data.frame(expand.grid(
   
   P= 1200,
   replicate = 1:NREP)) %>%
-  mutate(scenario=rep(1:3,NREP))
+  mutate(scenario=rep(1:4,NREP))
 
-violation_simdat <- simanalyze(violation_params)
+viol10_simdat <- simanalyze(viol_10)
+viol10_sumstats <- sumstats(viol10_simdat$data, scenarios = 4)
+datplots(viol10_sumstats,save.figs=T,prefix="plots/viol_10")
+estplots(viol10_simdat$ests,viol10_sumstats,save.figs=T,prefix="plots/viol_10")
+
+#### Near and complete Violations of Assumption 11 ####
+viol_11 <- data.frame(expand.grid(
+  x1.r = -.617, 
+  x2.r = -.715,
+  phi.1= -.18, phi.2=-.06, 
+  
+  q= -1.28,
+  om.1= -1,
+  om.2= -1,
+  om.3= -.235,
+  
+  H = 0, sigma.H = 0.02,
+  psi.1 = c(-.03,2), 
+  psi.2 = 1,
+  psi.3 = 1,
+  
+  theta.P = -68.5, sigma.P =0, 
+  gamma.3= -92, 
+  gamma.4 = 206, 
+  gamma.5 = -87,
+  gamma.6=0,
+  gamma.7=0,
+  
+  beta.0 = -3.05,
+  beta.3=0,
+  beta.4 = .839,
+  beta.5 = 1.17,
+  beta.6 = .778, 
+  
+  alpha.0 = 10100,
+  alpha.1 = 46500, 
+  alpha.2 = 600,
+  alpha.3 = 12,
+  
+  P= 1200,
+  replicate = 1:NREP)) %>%
+  mutate(scenario=rep(1:2,NREP))
+
+violation_simdat <- simanalyze(viol_11)
 violation_sumstats <- sumstats(violation_simdat$data)
-datplots(violation_sumstats,save.figs=T,prefix="violation")
-estplots(violation_simdat$ests,violation_sumstats,save.figs=T,prefix="violation")
+datplots(violation_sumstats,save.figs=T,prefix="plots/viol_11")
+estplots(violation_simdat$ests,violation_sumstats,save.figs=T,prefix="plots/viol_11")
 
 # Joint distribution of W,U by {S} across replicates and simulations
-ggplot(violation_simdat$data,aes(x=U,group=interaction(S,W))) + 
-  geom_density(aes(col=interaction(S,W))) + facet_wrap(S~scenario,ncol=3)
+# ggplot(violation_simdat$data,aes(x=U,group=interaction(S,W))) + 
+#   geom_density(aes(col=interaction(S,W))) + facet_wrap(S~scenario,ncol=3)
 # baseline value =-0.03, .1 = little overlap, .2 = no overlap
+
+
