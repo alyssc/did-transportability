@@ -161,6 +161,6 @@ viol_10_output$sumstats <- list('by.S'=do.call("rbind",viol_10_output$sumstats['
                                 'by.AS'=do.call("rbind",viol_10_output$sumstats['by.AS']),
                                 'by.AS.long'=do.call("rbind",viol_10_output$sumstats['by.AS.long']),
                                 'diff.by.AS.long'=do.call("rbind",viol_10_output$sumstats['diff.by.AS.long']))
-save(output,file="2024-07-22_HSR_results_viol10.RData")
+save(viol_10_output,file="2024-07-22_HSR_results_viol10.RData")
 
 
