@@ -78,8 +78,7 @@ make_regions <- function(global_params){
   if(is.null(global_params$psi.3)){
     global_params$psi.3 = 0
   }
-  print(global_params)
-  
+
   n_regions <- 50
   n_sregions <- 18 # number of CPC+ regions
   

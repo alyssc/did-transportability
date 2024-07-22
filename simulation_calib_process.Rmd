@@ -13,7 +13,7 @@ library(tidyverse)
 options(digits=3)
 
 source("HSR_simulation_fn.R", local = knitr::knit_global())
-source("HSR_param_calib.R", local = knitr::knit_global())
+source("HSR_calib_fn.R", local = knitr::knit_global())
 df <- make_regions(global_params)
 df <- tibble::as_tibble(df)
 ```
@@ -23,17 +23,12 @@ CALIBRATION
 Calibrating first set of parameters:
 
 ```{r}
-# Demonstrating current error
-new_params = global_params
-calib_assist1(new_params)
 
-# I ran this with multiple sequences in order to come up with the best adjustment for targets in calib table 1, 
-# which is now incorporated into global_params
-# Not shown: adjustment for targets other than q (I just changed and ran the code in place)
-for(adjust1 in seq(.32,.34,.002) ){
-  new_params$q= global_params$q + adjust1
-  print(c(adjust1, calib_assist1(new_params)[1,"P(B=1 | S)"] ))
+for(n in 1:3){
+  start_params <- calib_table1(start_params)  
+  print(calib_assist1(start_params))
 }
+
 ```
 
 
@@ -75,6 +70,8 @@ for(adjust1 in seq(0,.5,.1) ){
   print(c(adjust1, calib_assist2(new_params)[3],  calib_assist2(new_params)[4]))
 }
 
+
+
 ```
 
 Calibrating table 3: 
@@ -105,7 +102,10 @@ for(i in c(1:n) ){
 
 # In the above example round of adjustment (with an outdated global_params),
 # we found that calib_errs[5,2] was the smallest
-which(abs(calib_errs) == min(abs(calib_errs)),arr.ind = TRUE) # was 5,2
+m <- which(abs(calib_errs) == min(abs(calib_errs)),arr.ind = TRUE) # was 5,2
+
+c(m[1], m[2])
+
 adjust_vals[5] # adjustment: 0
 adjust_vals[2] # adjustment: -1.5
 
