@@ -102,8 +102,8 @@ p + facet_wrap(~S)
 ```{r}
 # Assumption 10 violation
 viol_10 <- global_params
-viol_10$gamma.6 <- 200
-viol_10$gamma.7 <- 200
+viol_10$gamma.6 <- 50
+viol_10$gamma.7 <- 50
 
 df <- make_regions(viol_10)
 df <- tibble::as_tibble(df)

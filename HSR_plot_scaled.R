@@ -1,7 +1,8 @@
 ## Making figures from simulation output
 library(tidyverse)
 source("HSR_plot_scaled_fn.R")
-load("2024-04-13_HSR_results.RData")
+load("2024-07-22_HSR_results.RData")
+load("2024-07-22_HSR_results_viol10.RData")
 
 scenario.order <- (output$sumstats$diff.by.AS.long %>% filter(name=="Non-SSP, system") %>%
   group_by(scenario) %>% summarize(median=quantile(diff,p=0.5)) %>% arrange(median))$scenario
@@ -33,7 +34,7 @@ output$ests %>% mutate(scenario=factor(scenario,levels=scenario.order,labels=1:l
 scenario_params <- data.frame(expand.grid(
   x1.r = -.617, 
   x2.r = -.715,
-  phi.1= c(-0.188,-0.188),  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
+  phi.1= c(-0.188,0.188),  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
   phi.2=c(-0.057,0.057),   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
   
   q= -1.38,
