@@ -8,8 +8,8 @@ nreps <- 1000
 scenario_params <- data.frame(expand.grid(
   x1.r = -.617, 
   x2.r = -.715,
-  phi.1= c(-.18,.18),  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
-  phi.2=c(-.06,.06),   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
+  phi.1= c(-0.188,-0.188),  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
+  phi.2=c(-0.057,0.057),   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
   
   q= -1.38,
   om.1 = c(-1.25,1.25),  # log odds ratio of Pr(Black) in SSP vs non-SSP

@@ -33,13 +33,13 @@ output$ests %>% mutate(scenario=factor(scenario,levels=scenario.order,labels=1:l
 scenario_params <- data.frame(expand.grid(
   x1.r = -.617, 
   x2.r = -.715,
-  phi.1= c(-.18,.18),  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
-  phi.2=c(-.06,.06),   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
+  phi.1= c(-0.188,-0.188),  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
+  phi.2=c(-0.057,0.057),   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
   
-  q= -1.28,
-  om.1 = c(-1,1),  # log odds ratio of Pr(Black) in SSP vs non-SSP
+  q= -1.38,
+  om.1 = c(-1.25,1.25),  # log odds ratio of Pr(Black) in SSP vs non-SSP
   om.2 = c(-1,1), # log odds ratio of Pr(Black) in system vs indep
-  om.3 = -.235,
+  om.3 = -0.1389,
   
   H = 0, sigma.H = 0.02,
   psi.1 = -.03, 
@@ -49,11 +49,11 @@ scenario_params <- data.frame(expand.grid(
   gamma.4 = 206, 
   gamma.5 = -87,
   
-  beta.0 = -3.05,
+  beta.0 = -3.063,
   beta.3 = 0,
-  beta.4 = .839,
-  beta.5 = 1.17,
-  beta.6 = .778, 
+  beta.4 = 1.02,
+  beta.5 = 1.301,
+  beta.6 = 0.6076, 
   
   alpha.0 = 10100,
   alpha.1 = 46500, 
