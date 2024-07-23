@@ -1,17 +1,16 @@
 ## Making figures from simulation output
 library(tidyverse)
 source("HSR_plot_scaled_fn.R")
+load("2024-07-23_HSR_results.RData")
+load("2024-07-23_HSR_results_viol10.RData")
 
-# Run all three together
-load("2024-07-22_HSR_results.RData")
-load("2024-07-22_HSR_results_viol10.RData")
 scenario.output <- output
 
 scenario.order <- (scenario.output$sumstats$diff.by.AS.long %>% filter(name=="Non-SSP, system") %>%
   group_by(scenario) %>% summarize(median=quantile(diff,p=0.5)) %>% arrange(median))$scenario
 # Find the new number of the base scenario
 
-viol_10.scenario.order <- c(1, 2, 4, 5, 3, 7, 6, 8, 9)
+viol_10.scenario.order <- c(1, 2, 4, 3, 5, 6, 7, 8, 9)
 
 for(i in c(1:2)){
   if(i==1){
@@ -63,10 +62,10 @@ scenario_params <- data.frame(expand.grid(
   H = 0, sigma.H = 0.02,
   psi.1 = -.03, 
   
-  theta.P = -76, sigma.P = 69, 
-  gamma.3 = -16, 
-  gamma.4 = 282, 
-  gamma.5 = -277,
+  theta.P = -68.5, sigma.P = 69, 
+  gamma.3 = -92, 
+  gamma.4 = 206, 
+  gamma.5 = -87,
   
   beta.0 = -3.063,
   beta.3 = 0,
@@ -100,13 +99,13 @@ viol_10_params <- data.frame(expand.grid(
   
   H = 0, sigma.H = 0.02,
   psi.1 = -.03, 
-
-  theta.P = -76, sigma.P = 69, 
-  gamma.3 = -16, 
-  gamma.4 = 282, 
-  gamma.5 = -277,
-  gamma.6=c(0,20,50),
-  gamma.7=c(0,20,50),
+  
+  theta.P = -68.5, sigma.P = 69, 
+  gamma.3 = -92, 
+  gamma.4 = 206, 
+  gamma.5 = -87,
+  gamma.6=c(0,50,200),
+  gamma.7=c(0,50,200),
   
   beta.0 = -3.063,
   beta.3 = 0,
