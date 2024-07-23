@@ -46,12 +46,12 @@ comb <- function(...) {
 viol_10_params <- data.frame(expand.grid(
   x1.r = -.617, 
   x2.r = -.715,
-  phi.1= 0.188,  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
-  phi.2= 0.057,   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
+  phi.1= -0.188,  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
+  phi.2= -0.057,   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
   
   q= -1.38,
   om.1 = -1.25,  # log odds ratio of Pr(Black) in SSP vs non-SSP
-  om.2 = 1, # log odds ratio of Pr(Black) in system vs indep
+  om.2 = -1, # log odds ratio of Pr(Black) in system vs indep
   om.3 = -0.1389,
   
   H = 0, sigma.H = 0.02,
