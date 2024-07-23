@@ -2,9 +2,8 @@
 library(foreach)
 library(doParallel)
 source("HSR_simulation_fn.R")
-source("HSR_plot_fn.R")
 
-nreps <- 100
+nreps <- 1000
 
 scenario_params <- data.frame(expand.grid(
   x1.r = -.617, 
@@ -47,12 +46,12 @@ comb <- function(...) {
 viol_10_params <- data.frame(expand.grid(
   x1.r = -.617, 
   x2.r = -.715,
-  phi.1= -0.188,  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
-  phi.2= -0.057,   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
+  phi.1= 0.188,  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
+  phi.2= 0.057,   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
   
   q= -1.38,
   om.1 = -1.25,  # log odds ratio of Pr(Black) in SSP vs non-SSP
-  om.2 = -1, # log odds ratio of Pr(Black) in system vs indep
+  om.2 = 1, # log odds ratio of Pr(Black) in system vs indep
   om.3 = -0.1389,
   
   H = 0, sigma.H = 0.02,
@@ -112,6 +111,16 @@ stop <- Sys.time()
 stopCluster(myCluster)
 stop-start
 
+#quick and dirty repackaging of the results object
+output$sumstats <- list('by.S'=do.call("rbind",output$sumstats[,'by.S']),
+                        'by.X'=do.call("rbind",output$sumstats[,'by.X']),
+                        'by.A'=do.call("rbind",output$sumstats[,'by.A']),
+                        'by.AS'=do.call("rbind",output$sumstats[,'by.AS']),
+                        'by.AS.long'=do.call("rbind",output$sumstats[,'by.AS.long']),
+                        'diff.by.AS.long'=do.call("rbind",output$sumstats[,'diff.by.AS.long']))
+save(output,file="2024-07-23_HSR_results.RData")
+
+rm(output)
 
 ## Violation of Assumption 10
 
@@ -146,21 +155,10 @@ stop <- Sys.time()
 stopCluster(myCluster)
 stop-start
 
-#quick and dirty repackaging of the results object
-output$sumstats <- list('by.S'=do.call("rbind",output$sumstats[,'by.S']),
-                        'by.X'=do.call("rbind",output$sumstats[,'by.X']),
-                        'by.A'=do.call("rbind",output$sumstats[,'by.A']),
-                        'by.AS'=do.call("rbind",output$sumstats[,'by.AS']),
-                        'by.AS.long'=do.call("rbind",output$sumstats[,'by.AS.long']),
-                        'diff.by.AS.long'=do.call("rbind",output$sumstats[,'diff.by.AS.long']))
-save(output,file="2024-07-22_HSR_results.RData")
-
 viol_10_output$sumstats <- list('by.S'=do.call("rbind",viol_10_output$sumstats[,'by.S']),
                                 'by.X'=do.call("rbind",viol_10_output$sumstats[,'by.X']),
                                 'by.A'=do.call("rbind",viol_10_output$sumstats[,'by.A']),
                                 'by.AS'=do.call("rbind",viol_10_output$sumstats[,'by.AS']),
                                 'by.AS.long'=do.call("rbind",viol_10_output$sumstats[,'by.AS.long']),
                                 'diff.by.AS.long'=do.call("rbind",viol_10_output$sumstats[,'diff.by.AS.long']))
-save(viol_10_output,file="2024-07-22_HSR_results_viol10.RData")
-
-
+save(viol_10_output,file="2024-07-23_HSR_results_viol10.RData")
