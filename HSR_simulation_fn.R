@@ -127,7 +127,7 @@ make_regions <- function(global_params){
     
     # make sure at least within range of ATT from JAMA paper
     delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2 + params$gamma.5*X1*X2 
-                   + params$gamma.6*X1*S + params$gamma.7*X2*S
+                   + params$gamma.6*X1*(S-1) + params$gamma.7*X2*(S-1)
                    , sd = params$sigma.P)
     
     betas <- c(params$beta.0, params$beta.3, params$beta.4, params$beta.5, params$beta.6)

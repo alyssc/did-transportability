@@ -63,10 +63,10 @@ scenario_params <- data.frame(expand.grid(
   H = 0, sigma.H = 0.02,
   psi.1 = -.03, 
   
-  theta.P = -68.5, sigma.P = 69, 
-  gamma.3 = -92, 
-  gamma.4 = 206, 
-  gamma.5 = -87,
+  theta.P = -76, sigma.P = 69, 
+  gamma.3 = -16, 
+  gamma.4 = 282, 
+  gamma.5 = -277,
   
   beta.0 = -3.063,
   beta.3 = 0,
@@ -100,13 +100,13 @@ viol_10_params <- data.frame(expand.grid(
   
   H = 0, sigma.H = 0.02,
   psi.1 = -.03, 
-  
-  theta.P = -68.5, sigma.P = 69, 
-  gamma.3 = -92, 
-  gamma.4 = 206, 
-  gamma.5 = -87,
-  gamma.6=c(0,50,200),
-  gamma.7=c(0,50,200),
+
+  theta.P = -76, sigma.P = 69, 
+  gamma.3 = -16, 
+  gamma.4 = 282, 
+  gamma.5 = -277,
+  gamma.6=c(0,20,50),
+  gamma.7=c(0,20,50),
   
   beta.0 = -3.063,
   beta.3 = 0,
