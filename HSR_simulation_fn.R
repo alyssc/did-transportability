@@ -1,44 +1,6 @@
 library(tidyverse)
 
 # Default global params
-global_params <- data.frame(
-  x1.r = -.617, 
-  x2.r = -.715,
-  phi.1= -.18, phi.2=-.06, 
-  
-  q= -1.38,
-  om.1= -1,
-  om.2= -1,
-  om.3= -.235,
-  
-  H = 0, sigma.H = 0.02,
-  psi.1=-.03, 
-  #psi.2 =0,
-  #psi.3 = 0,
-  #psi.4 =0,
-  #psi.5 = 0,
-  
-  theta.P = -68.5, sigma.P = 69,
-  gamma.3=-92, 
-  gamma.4 = 206, 
-  gamma.5 = -87,
-  #gamma.6 = 0,
-  #gamma.7 = 0,
-  
-  beta.0 = -3.05,
-  beta.3=0,
-  beta.4 = .839,
-  beta.5 = 1.17,
-  beta.6 = .778, 
-  
-  alpha.0 = 10100,
-  alpha.1 = 46500 , 
-  alpha.2 = 600,
-  alpha.3 = 12,
-  
-  P= 1200 # number of practices in a region
-  
-)
 
 # Defining functions for simulation study
 
@@ -126,9 +88,8 @@ make_regions <- function(global_params){
     # U.post <- rnorm(P, mean = params$H + params$psi.2, sd = params$sigma.H) #post-period unobserved H
     
     # make sure at least within range of ATT from JAMA paper
-    delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2 + params$gamma.5*X1*X2 
-                   + params$gamma.6*X1*(S-1) + params$gamma.7*X2*(S-1)
-                   , sd = params$sigma.P)
+    delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2 + params$gamma.5*X1*X2 + 
+                     params$gamma.6*X1*(S-1) + params$gamma.7*X2*(S-1), sd = params$sigma.P)
     
     betas <- c(params$beta.0, params$beta.3, params$beta.4, params$beta.5, params$beta.6)
     trt.prob <- inv.logit(betas %*% rbind(1, U, X1, X2, S))
@@ -263,5 +224,49 @@ plot_patt <- function(results, var_name){
   return(plot_patt)
 }
 
+sumstats <- function(data){
+  # Calibration targets
+  # Pr(B|S), Pre(SSP|S), Pr(sys|S), Pr(A|S)
+  by.S <- data %>% group_by(scenario,replicate,S) %>%
+    # unweighted (practice-level) stats
+    summarize(Black=mean(b),
+              SSP=mean(X1),
+              sys=mean(X2),
+              A=mean(A)) %>%
+    mutate(S=factor(S,levels=c(1,0),labels=c('Sample','Target')))
+  # Pr(A|SSP=0,S=1), Pr(A|SSP=1,S=1), Pr(A|sys=0,S=1) , Pr(A=1,sys=1,S=1)
+  by.X <- data %>% filter(S==1) %>% group_by(scenario,replicate,X1) %>%
+    summarize(A=mean(A)) %>% rename(X=X1) %>% ungroup() %>%
+    mutate(X=factor(X,levels=c(0,1),labels=c('non-SSP','SSP'))) %>%
+    bind_rows(data %>% filter(S==1) %>% group_by(scenario,replicate,X2) %>%
+                summarize(A=mean(A)) %>% rename(X=X2) %>% ungroup() %>%
+                mutate(X=factor(X,levels=c(0,1),labels=c('independent','system')))) %>%
+    mutate(X=factor(X,levels=c('non-SSP','SSP','independent','system')))
+  # Pr(B|S=1,A)
+  by.A <- data %>% filter(S==1) %>% group_by(scenario,replicate,A) %>%
+    summarize(Black=mean(b)) %>%
+    mutate(A=factor(A,levels=c(0,1),labels=c('Untreated','Treated')))
+  
+  # W by {AxS}
+  by.AS <- data %>%
+    group_by(scenario,replicate,group,trt)  %>%
+    # Weighted by their importance to Black benes
+    summarize(non.indep=weighted.mean(W==1,w=wt)*100,
+              non.sys=weighted.mean(W==2,w=wt)*100,
+              ssp.indep=weighted.mean(W==3,w=wt)*100,
+              ssp.sys=weighted.mean(W==4,w=wt)*100)
+  by.AS.long <- by.AS %>% pivot_longer(5:8) %>% 
+    mutate(name=factor(name,levels=c('non.indep','non.sys','ssp.indep','ssp.sys'),
+                       labels=c('Non-SSP, independent','Non-SSP, system',
+                                'SSP, independent','SSP, system')))
+  # Differences between Target and Sample
+  diff.by.AS.long <- filter(by.AS.long,trt=="Treated") %>% 
+    pivot_wider(names_from=group,values_from=value) %>% 
+    mutate(diff=Target-Sample) %>% 
+    select(scenario,replicate,name,diff)
+
+  return(list('by.S'=by.S,'by.X'=by.X,'by.A'=by.A,
+              'by.AS'=by.AS,'by.AS.long'=by.AS.long,'diff.by.AS.long'=diff.by.AS.long))
+}
 
 
