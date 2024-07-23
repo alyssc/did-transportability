@@ -9,6 +9,7 @@ datplots <- function(sumstats,save.figs,prefix,order){
   ## Practice characteristics in sample and target
   panelA <- ggplot(filter(sumstats$by.AS.long,trt=="Treated"),aes(x=value,y=name)) + 
     geom_boxplot(aes(col=group),position=position_dodge(width=1)) + facet_wrap(~scenario) +
+    scale_color_grey(start=0,end=.7) + 
     labs(x="Percent",y="",color="") + theme(legend.position="bottom")
   if (save.figs) ggsave(paste0(prefix,"_","W_dist.png"),panelA,width=8,height=6) else print(panelA)
   
@@ -29,7 +30,7 @@ estplots <- function(ests,sumstats,save.figs,prefix,order){
     pivot_longer(true.patt:true.satt)
   
   panelA <- ggplot(true.plot.dat,aes(x=scenario,y=value)) + geom_boxplot(aes(col=name)) + 
-    geom_hline(yintercept=0) + scale_color_discrete(labels=c('PATT','SATT')) + 
+    geom_hline(yintercept=0) + scale_color_grey(start=0,end=.7,labels=c('PATT','SATT')) + 
     labs(y="True ATT",x="Simulation Scenario",color="") + theme(legend.position="bottom")
   if (save.figs) ggsave(paste0(prefix,"_","true_PATT_SATT.png"),width=6,height=4) else print(panelA)
   
@@ -49,7 +50,7 @@ estplots <- function(ests,sumstats,save.figs,prefix,order){
   
   panelC <- ggplot(diff.plot.dat,aes(x=scenario,y=value,group=interaction(name,scenario))) + 
     geom_boxplot(aes(col=name),position=position_dodge(width=.75)) + geom_hline(yintercept=0) +
-    labs(x="Simulation Scenario",y="PATT - SATT",color="") + scale_color_discrete(labels=c('Estimated','True')) +
+    labs(x="Simulation Scenario",y="PATT - SATT",color="") + scale_color_grey(start=0,end=.7,labels=c('Estimated','True')) +
     theme(legend.position="bottom")
   if (save.figs) ggsave(paste0(prefix,"_","PATT_minus_SATT.png"),width=6,height=4) else print(panelC)
 }
@@ -75,7 +76,7 @@ calibplots <- function(sumstats,save.figs,which.base){
     geom_boxplot(aes(col=X)) +
     geom_point(data=by.X.targets,aes(x=X,y=A,col=X,group=X),shape=8,size=2) +
     scale_y_continuous(limits=c(0,1)) + 
-    scale_color_discrete(guide="none") + labs(x="",y="Proportion treated")
+    scale_color_grey(start=0,end=.7,guide="none") + labs(x="",y="Proportion treated")
   if (save.figs) ggsave("plots/calib_by_X.png",width=6,height=4) else print(panelB)
   
   by.A.targets <- tibble(A=c('Untreated','Treated'),
@@ -84,6 +85,6 @@ calibplots <- function(sumstats,save.figs,which.base){
     geom_boxplot(aes(col=A)) +
     geom_point(data=by.A.targets,aes(x=A,y=Black,col=A),shape=8,size=2) +
     scale_y_continuous(limits=c(0,1)) + 
-    scale_color_discrete(guide="none") + labs(x="",y="Proportion Black",col="")
+    scale_color_grey(start=0,end=.7,guide="none") + labs(x="",y="Proportion Black",col="")
   if (save.figs) ggsave("plots/calib_by_A.png",width=6,height=4) else print(panelC)
 }
