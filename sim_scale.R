@@ -4,7 +4,7 @@ library(doParallel)
 source("HSR_simulation_fn.R")
 source("HSR_plot_fn.R")
 
-nreps <- 1
+nreps <- 100
 
 scenario_params <- data.frame(expand.grid(
   x1.r = -.617, 
@@ -147,20 +147,20 @@ stopCluster(myCluster)
 stop-start
 
 #quick and dirty repackaging of the results object
-output$sumstats <- list('by.S'=do.call("rbind",output$sumstats['by.S']),
-                        'by.X'=do.call("rbind",output$sumstats['by.X']),
-                        'by.A'=do.call("rbind",output$sumstats['by.A']),
-                        'by.AS'=do.call("rbind",output$sumstats['by.AS']),
-                        'by.AS.long'=do.call("rbind",output$sumstats['by.AS.long']),
-                        'diff.by.AS.long'=do.call("rbind",output$sumstats['diff.by.AS.long']))
+output$sumstats <- list('by.S'=do.call("rbind",output$sumstats[,'by.S']),
+                        'by.X'=do.call("rbind",output$sumstats[,'by.X']),
+                        'by.A'=do.call("rbind",output$sumstats[,'by.A']),
+                        'by.AS'=do.call("rbind",output$sumstats[,'by.AS']),
+                        'by.AS.long'=do.call("rbind",output$sumstats[,'by.AS.long']),
+                        'diff.by.AS.long'=do.call("rbind",output$sumstats[,'diff.by.AS.long']))
 save(output,file="2024-07-22_HSR_results.RData")
 
-viol_10_output$sumstats <- list('by.S'=do.call("rbind",viol_10_output$sumstats['by.S']),
-                                'by.X'=do.call("rbind",viol_10_output$sumstats['by.X']),
-                                'by.A'=do.call("rbind",viol_10_output$sumstats['by.A']),
-                                'by.AS'=do.call("rbind",viol_10_output$sumstats['by.AS']),
-                                'by.AS.long'=do.call("rbind",viol_10_output$sumstats['by.AS.long']),
-                                'diff.by.AS.long'=do.call("rbind",viol_10_output$sumstats['diff.by.AS.long']))
+viol_10_output$sumstats <- list('by.S'=do.call("rbind",viol_10_output$sumstats[,'by.S']),
+                                'by.X'=do.call("rbind",viol_10_output$sumstats[,'by.X']),
+                                'by.A'=do.call("rbind",viol_10_output$sumstats[,'by.A']),
+                                'by.AS'=do.call("rbind",viol_10_output$sumstats[,'by.AS']),
+                                'by.AS.long'=do.call("rbind",viol_10_output$sumstats[,'by.AS.long']),
+                                'diff.by.AS.long'=do.call("rbind",viol_10_output$sumstats[,'diff.by.AS.long']))
 save(viol_10_output,file="2024-07-22_HSR_results_viol10.RData")
 
 
