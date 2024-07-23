@@ -1,16 +1,17 @@
 ## Making figures from simulation output
 library(tidyverse)
 source("HSR_plot_scaled_fn.R")
+
+# Run all three together
 load("2024-07-22_HSR_results.RData")
 load("2024-07-22_HSR_results_viol10.RData")
-
 scenario.output <- output
 
 scenario.order <- (scenario.output$sumstats$diff.by.AS.long %>% filter(name=="Non-SSP, system") %>%
   group_by(scenario) %>% summarize(median=quantile(diff,p=0.5)) %>% arrange(median))$scenario
 # Find the new number of the base scenario
 
-viol_10.scenario.order <- c(1:9)
+viol_10.scenario.order <- c(1, 2, 4, 5, 3, 7, 6, 8, 9)
 
 for(i in c(1:2)){
   if(i==1){

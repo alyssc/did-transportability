@@ -9,7 +9,7 @@ nreps <- 100
 scenario_params <- data.frame(expand.grid(
   x1.r = -.617, 
   x2.r = -.715,
-  phi.1= c(-0.188,-0.188),  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
+  phi.1= c(-0.188,0.188),  # log odds ratio of Pr(SSP) in CPC+ vs non-CPC+
   phi.2=c(-0.057,0.057),   # log odds ratio of Pr(system) in CPC+ vs non-CPC+
   
   q= -1.38,
@@ -20,10 +20,10 @@ scenario_params <- data.frame(expand.grid(
   H = 0, sigma.H = 0.02,
   psi.1 = -.03, 
   
-  theta.P = -68.5, sigma.P = 69, 
-  gamma.3 = -92, 
-  gamma.4 = 206, 
-  gamma.5 = -87,
+  theta.P = -76, sigma.P = 69, 
+  gamma.3 = -16, 
+  gamma.4 = 282, 
+  gamma.5 = -277,
   
   beta.0 = -3.063,
   beta.3 = 0,
@@ -58,10 +58,10 @@ viol_10_params <- data.frame(expand.grid(
   H = 0, sigma.H = 0.02,
   psi.1 = -.03, 
   
-  theta.P = -68.5, sigma.P = 69, 
-  gamma.3 = -92, 
-  gamma.4 = 206, 
-  gamma.5 = -87,
+  theta.P = -76, sigma.P = 69, 
+  gamma.3 = -16, 
+  gamma.4 = 282, 
+  gamma.5 = -277,
   gamma.6=c(0,50,200),
   gamma.7=c(0,50,200),
   
