@@ -4,13 +4,25 @@ source("HSR_plot_scaled_fn.R")
 load("2024-07-22_HSR_results.RData")
 load("2024-07-22_HSR_results_viol10.RData")
 
-scenario.order <- (output$sumstats$diff.by.AS.long %>% filter(name=="Non-SSP, system") %>%
-  group_by(scenario) %>% summarize(median=quantile(diff,p=0.5)) %>% arrange(median))$scenario
-# Find the new number of the base scenario:
+scenario.output <- output
 
-datplots(output$sumstats,save.figs=T,prefix="scenario",order=scenario.order)
-estplots(output$ests,output$sumstats,save.figs=T,prefix="scenario",order=scenario.order)
-calibplots(output$sumstats,save.figs=T,which.base=which(scenario.order==1))
+scenario.order <- (scenario.output$sumstats$diff.by.AS.long %>% filter(name=="Non-SSP, system") %>%
+  group_by(scenario) %>% summarize(median=quantile(diff,p=0.5)) %>% arrange(median))$scenario
+# Find the new number of the base scenario
+
+viol_10.scenario.order <- c(1:9)
+
+outputs <- c(scenario.output, viol_10_output)
+scenario.orders <- c(scenario.order, viol_10.scenario.order)
+for(i in c(1:2)){
+  output <- outputs[i]
+  order <- scenario.orders[i]
+  datplots(output$sumstats,save.figs=T,prefix="plots/scenario",order=order)
+  estplots(output$ests,output$sumstats,save.figs=T,prefix="plots/scenario",order=order)
+}
+
+calibplots(scenario.output$sumstats,save.figs=T,which.base=which(order==1))
+
 
 # For reporting in the text:
 output$sumstats$by.AS.long %>% mutate(scenario=factor(scenario,levels=scenario.order,labels=1:length(scenario.order))) %>%

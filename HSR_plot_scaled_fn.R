@@ -67,7 +67,7 @@ calibplots <- function(sumstats,save.figs,which.base){
                shape=8,size=2,position=position_dodge(width=1)) + 
     #scale_y_continuous(limits=c(0,1)) + 
     labs(x="",y="Proportion",color="") + theme(legend.position="bottom")
-  if(save.figs) ggsave("calib_by_S.png",width=6,height=4) else print(panelA)
+  if(save.figs) ggsave("plots/calib_by_S.png",width=6,height=4) else print(panelA)
   
   by.X.targets <- tibble(X=c('non-SSP','SSP','independent','system'),
                          A=c(.141,.269,.121,.309))
@@ -76,7 +76,7 @@ calibplots <- function(sumstats,save.figs,which.base){
     geom_point(data=by.X.targets,aes(x=X,y=A,col=X,group=X),shape=8,size=2) +
     scale_y_continuous(limits=c(0,1)) + 
     scale_color_discrete(guide="none") + labs(x="",y="Proportion treated")
-  if (save.figs) ggsave("calib_by_X.png",width=6,height=4) else print(panelB)
+  if (save.figs) ggsave("plots/calib_by_X.png",width=6,height=4) else print(panelB)
   
   by.A.targets <- tibble(A=c('Untreated','Treated'),
                          Black=c(.131,.069))
@@ -85,5 +85,5 @@ calibplots <- function(sumstats,save.figs,which.base){
     geom_point(data=by.A.targets,aes(x=A,y=Black,col=A),shape=8,size=2) +
     scale_y_continuous(limits=c(0,1)) + 
     scale_color_discrete(guide="none") + labs(x="",y="Proportion Black",col="")
-  if (save.figs) ggsave("calib_by_A.png",width=6,height=4) else print(panelC)
+  if (save.figs) ggsave("plots/calib_by_A.png",width=6,height=4) else print(panelC)
 }
