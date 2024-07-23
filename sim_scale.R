@@ -38,6 +38,8 @@ scenario_params <- data.frame(expand.grid(
   P= 1200)) %>%
   mutate(scenario=c(1:16))
 
+write_csv(scenario_params %>% select(scenario,om.1,om.2,phi.1,phi.2),"scenario_params_varying.csv")
+
 # Helper function to rbind the lists
 comb <- function(...) {
   mapply('rbind', ..., SIMPLIFY=FALSE)
@@ -77,6 +79,9 @@ viol_10_params <- data.frame(expand.grid(
   
   P= 1200)) %>%
   mutate(scenario=c(1:9))
+
+write_csv(viol_10_params %>% select(scenario,gamma.6,gamma.7),"viol_10_params_varying.csv")
+
 
 # Parallelization
 
