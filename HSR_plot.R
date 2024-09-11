@@ -175,7 +175,7 @@ viol_11 <- data.frame(expand.grid(
   gamma.7=0,
   
   beta.0 = -3.05,
-  beta.3=0,
+  beta.3=.15,
   beta.4 = .839,
   beta.5 = 1.17,
   beta.6 = .778, 

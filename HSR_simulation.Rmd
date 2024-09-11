@@ -79,6 +79,7 @@ viol_11 <- global_params
 viol_11$psi.1 <- 2
 viol_11$psi.2 <- 1
 viol_11$psi.3 <- 1
+viol_11$beta.3 <- .5
 
 df <- make_regions(viol_11)
 df <- tibble::as_tibble(df)
@@ -91,7 +92,13 @@ p + facet_wrap(~W)
 
 df %>% filter(W==1) %>% select(U) %>% summary()
 
+# Looking at U between A=0, 1
+p <- ggplot( df, aes(x=U, color=factor(A, levels = c("0","1")),fill=factor(A, levels = c("0","1")))) + 
+  geom_density(alpha=.3)
+p
+
 ```
+
 ```{r}
 p <- ggplot( df, aes(x=U, color=factor(W),fill=factor(W))) + 
   geom_density(alpha=.3)
