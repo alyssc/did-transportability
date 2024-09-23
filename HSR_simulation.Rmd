@@ -72,6 +72,7 @@ lm.did(df,plot=T)
 plot.did(df)
 ```
 
+Assumption violations:
 
 ```{r}
 # Assumption 11 violation
@@ -121,6 +122,7 @@ p <- ggplot( df, aes(x=delta, color=factor(S),fill=factor(S))) +
 p
 p + facet_wrap(~W)
 ```
+
 
 
 ```{r}

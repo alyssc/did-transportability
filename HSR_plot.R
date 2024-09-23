@@ -175,13 +175,14 @@ viol_11 <- data.frame(expand.grid(
   gamma.7=0,
   
   beta.0 = -3.05,
-  beta.3=.15,
+  beta.3=.5,
   beta.4 = .839,
   beta.5 = 1.17,
   beta.6 = .778, 
   
   alpha.0 = 10100,
   alpha.1 = 46500, 
+  alpha.1b = 48000, 
   alpha.2 = 600,
   alpha.3 = 12,
   
@@ -191,8 +192,8 @@ viol_11 <- data.frame(expand.grid(
 
 violation_simdat <- simanalyze(viol_11)
 violation_sumstats <- sumstats(violation_simdat$data)
-datplots(violation_sumstats,save.figs=T,prefix="plots/viol_11")
-estplots(violation_simdat$ests,violation_sumstats,save.figs=T,prefix="plots/viol_11")
+datplots(violation_sumstats,save.figs=T,prefix="plots/viol_11b")
+estplots(violation_simdat$ests,violation_sumstats,save.figs=T,prefix="plots/viol_11b")
 
 # Joint distribution of W,U by {S} across replicates and simulations
 # ggplot(violation_simdat$data,aes(x=U,group=interaction(S,W))) + 

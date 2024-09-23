@@ -40,6 +40,9 @@ make_regions <- function(global_params){
   if(is.null(global_params$psi.3)){
     global_params$psi.3 = 0
   }
+  if(is.null(global_params$alpha.1b)){
+    global_params$alpha.1b = global_params$alpha.1
+  }
 
   n_regions <- 50
   n_sregions <- 18 # number of CPC+ regions
@@ -96,9 +99,9 @@ make_regions <- function(global_params){
     A <- rbern(n = P, prob = trt.prob)
     
     Yb.pre <-   params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2
-    Yb.post <-  params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * A # observed outcome
-    Yb.post0 <- params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
-    Yb.post1 <- params$alpha.0 + params$alpha.1*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
+    Yb.post <-  params$alpha.0 + params$alpha.1b*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta * A # observed outcome
+    Yb.post0 <- params$alpha.0 + params$alpha.1b*U + params$alpha.2 * X1 + params$alpha.3 * X2 # untreated potential outcome
+    Yb.post1 <- params$alpha.0 + params$alpha.1b*U + params$alpha.2 * X1 + params$alpha.3 * X2 + delta # treated potential outcome
 
     df <- rbind(df, data.frame(region_id, S, b, B, W,X1,X2, U, delta, A, Yb.pre, Yb.post, Yb.post0, Yb.post1))
   }
