@@ -28,7 +28,7 @@ global_params <- data.frame(
   om.3= -.235,
   
   H = 0, sigma.H = 0.02,
-  psi.1=-.03, 
+  psi.1=0, 
   psi.2 =0,
   psi.3 = 0,
   
@@ -108,19 +108,17 @@ p + facet_wrap(~S)
 ```
 
 ```{r}
-# Assumption 10 violation
-viol_10 <- global_params
-viol_10$gamma.6 <- 200
-viol_10$gamma.7 <- 200
+# Assumption 11 violation
+viol_11 <- global_params
+viol_11$psi.1 <- 2
 # delta ~ S * W
 
-df <- make_regions(viol_10)
+df <- make_regions(viol_11)
 df <- tibble::as_tibble(df)
 
-p <- ggplot( df, aes(x=delta, color=factor(S),fill=factor(S))) + 
+p <- ggplot( df, aes(x=U, color=factor(S, levels = c("0","1")),fill=factor(S, levels = c("0","1")))) + 
   geom_density(alpha=.3)
 p
-p + facet_wrap(~W)
 ```
 
 

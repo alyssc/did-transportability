@@ -43,6 +43,9 @@ make_regions <- function(global_params){
   if(is.null(global_params$alpha.1b)){
     global_params$alpha.1b = global_params$alpha.1
   }
+  if(is.null(global_params$gamma.8)){
+    global_params$gamma.8 = 0
+  }
 
   n_regions <- 50
   n_sregions <- 18 # number of CPC+ regions
@@ -92,7 +95,7 @@ make_regions <- function(global_params){
     
     # make sure at least within range of ATT from JAMA paper
     delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2 + params$gamma.5*X1*X2 + 
-                     params$gamma.6*X1*(S-1) + params$gamma.7*X2*(S-1), sd = params$sigma.P)
+                     params$gamma.6*X1*(S-1) + params$gamma.7*X2*(S-1) + params$gamma.8*S, sd = params$sigma.P)
     
     betas <- c(params$beta.0, params$beta.3, params$beta.4, params$beta.5, params$beta.6)
     trt.prob <- inv.logit(betas %*% rbind(1, U, X1, X2, S))

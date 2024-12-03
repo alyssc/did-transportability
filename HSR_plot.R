@@ -151,7 +151,7 @@ viol10_sumstats <- sumstats(viol10_simdat$data, scenarios = 4)
 datplots(viol10_sumstats,save.figs=T,prefix="plots/viol_10")
 estplots(viol10_simdat$ests,viol10_sumstats,save.figs=T,prefix="plots/viol_10")
 
-#### Near and complete Violations of Assumption 11 ####
+#### Near and complete Violations of Assumption 11 through U ####
 viol_11 <- data.frame(expand.grid(
   x1.r = -.617, 
   x2.r = -.715,
@@ -163,9 +163,9 @@ viol_11 <- data.frame(expand.grid(
   om.3= -.235,
   
   H = 0, sigma.H = 0.02,
-  psi.1 = c(-.03,2), 
-  psi.2 = 1,
-  psi.3 = 1,
+  psi.1 = c(0, .03,2), 
+  psi.2 = 0,
+  psi.3 = 0,
   
   theta.P = -68.5, sigma.P =0, 
   gamma.3= -92, 
@@ -188,12 +188,12 @@ viol_11 <- data.frame(expand.grid(
   
   P= 1200,
   replicate = 1:NREP)) %>%
-  mutate(scenario=rep(1:2,NREP))
+  mutate(scenario=rep(1:3,NREP))
 
 violation_simdat <- simanalyze(viol_11)
 violation_sumstats <- sumstats(violation_simdat$data)
-datplots(violation_sumstats,save.figs=T,prefix="plots/viol_11b")
-estplots(violation_simdat$ests,violation_sumstats,save.figs=T,prefix="plots/viol_11b")
+datplots(violation_sumstats,save.figs=T,prefix="plots/viol_11")
+estplots(violation_simdat$ests,violation_sumstats,save.figs=T,prefix="plots/viol_11")
 
 # Joint distribution of W,U by {S} across replicates and simulations
 # ggplot(violation_simdat$data,aes(x=U,group=interaction(S,W))) + 
@@ -201,3 +201,48 @@ estplots(violation_simdat$ests,violation_sumstats,save.figs=T,prefix="plots/viol
 # baseline value =-0.03, .1 = little overlap, .2 = no overlap
 
 
+#### Near and complete Violations of Assumption 10c ####
+#### Near and complete Violations of Assumption 11 through U ####
+viol_10c <- data.frame(expand.grid(
+  x1.r = -.617, 
+  x2.r = -.715,
+  phi.1= -.18, phi.2=-.06, 
+  
+  q= -1.28,
+  om.1= -1,
+  om.2= -1,
+  om.3= -.235,
+  
+  H = 0, sigma.H = 0.02,
+  psi.1 = 0, 
+  psi.2 = 0,
+  psi.3 = 0,
+  
+  theta.P = -68.5, sigma.P =0, 
+  gamma.3= -92, 
+  gamma.4 = 206, 
+  gamma.5 = -87,
+  gamma.6=0,
+  gamma.7=0,
+  gamma.8=c(0,50,100),
+  
+  beta.0 = -3.05,
+  beta.3=.5,
+  beta.4 = .839,
+  beta.5 = 1.17,
+  beta.6 = .778, 
+  
+  alpha.0 = 10100,
+  alpha.1 = 46500, 
+  alpha.1b = 48000, 
+  alpha.2 = 600,
+  alpha.3 = 12,
+  
+  P= 1200,
+  replicate = 1:NREP)) %>%
+  mutate(scenario=rep(1:3,NREP))
+
+violation_simdat <- simanalyze(viol_10c)
+violation_sumstats <- sumstats(violation_simdat$data)
+datplots(violation_sumstats,save.figs=T,prefix="plots/viol_10c")
+estplots(violation_simdat$ests,violation_sumstats,save.figs=T,prefix="plots/viol_10c")
