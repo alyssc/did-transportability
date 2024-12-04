@@ -1,10 +1,53 @@
+# Functions for simulation study ------------------------------------------
 library(tidyverse)
 
-# Default global params
 
-# Defining functions for simulation study
+# Distribution functions
+inv.logit <- function(p){
+  return(exp(p)/(1+exp(p)))
+}
 
-## DATA GENERATING MECHANISMS ##
+rbern <- function(n, prob){
+  rbinom(n,size=1,prob=prob)
+}
+
+# Data generating functions -----------------------------------------------
+
+# Global parameters; already calibrated to real-world values from literature
+global_params <- data.frame(
+  x1.r = -.617, 
+  x2.r = -.715,
+  phi.1 = -.18, phi.2=-.06, 
+  
+  q = -1.28,
+  om.1 = -1,
+  om.2 = -1,
+  om.3 = -.235,
+  
+  H = 0, sigma.H = 0.02,
+  psi.1 = -.03, 
+  psi.2 =0,
+  psi.3 = 0,
+  
+  theta.P = -68.5, sigma.P = 0, 
+  gamma.3 = -92, 
+  gamma.4 = 206, 
+  gamma.5 = -87,
+  gamma.6=0,
+  gamma.7=0,
+  
+  beta.0 = -3.05,
+  beta.3 = 0,
+  beta.4 = .839,
+  beta.5 = 1.17,
+  beta.6 = .778, 
+  
+  alpha.0 = 10100,
+  alpha.1 = 46500, 
+  alpha.2 = 600,
+  alpha.3 = 12,
+  
+  P= 1200)
 
 # Generate region parameters
 # Including region_id, S
@@ -16,18 +59,10 @@ get_region_params <- function(id, global_params, in_sample = 0){
   return(region_params)
 } 
 
-inv.logit <- function(p){
-  return(exp(p)/(1+exp(p)))
-}
-
-rbern <- function(n, prob){
-  rbinom(n,size=1,prob=prob)
-}
-
-#' Generate simulation of universe of regions and practices
+# Generate simulation of universe of regions and practices
 make_regions <- function(global_params){
   
-  # some parameters are new and may not be included in previously written params
+  # setting optional parameters to 0 by default
   if(is.null(global_params$gamma.6)){
     global_params$gamma.6 = 0
   }
@@ -89,11 +124,8 @@ make_regions <- function(global_params){
     b <- B/n
     
     U <- rnorm(P, mean = params$H + params$psi.1*S + params$psi.2*X1 + params$psi.3*X2 
-               #+ params$psi.4*X1*S + params$psi.5*X2*S
                , sd = params$sigma.H) # unobserved H
-    # U.post <- rnorm(P, mean = params$H + params$psi.2, sd = params$sigma.H) #post-period unobserved H
-    
-    # make sure at least within range of ATT from JAMA paper
+
     delta <- rnorm(P, params$theta.P + params$gamma.3*X1 + params$gamma.4*X2 + params$gamma.5*X1*X2 + 
                      params$gamma.6*X1*(S-1) + params$gamma.7*X2*(S-1) + params$gamma.8*S, sd = params$sigma.P)
     
@@ -122,10 +154,11 @@ make_regions <- function(global_params){
 }
 
 
-## ESTIMATION ##
+
+# Estimation functions --------------------------------------------------------------
 
 
-## Returns vector of three estimates from G comp, IPW, DR estimators
+# Returns vector of three estimates from G comp, IPW, DR estimators
 estimate_patt <- function(df){
   m <- lm(Yb.post-Yb.pre ~ W*A*S, data = df) 
   m0 <- predict(m, newdata=df %>% mutate(A=0,S=1))
@@ -156,7 +189,7 @@ estimate_patt <- function(df){
   return(tibble('gc'=gcomp.val, 'ipw'=ipw.val,'dr'= dr.val))
 }
 
-## True PATT
+# True PATT
 true_patt <- function(df){
   I10 = 1*(df$A==1 & df$S==0)
   p10 = weighted.mean(df$A*(1-df$S),w=df$wt)
@@ -164,7 +197,7 @@ true_patt <- function(df){
 }
 
 
-## In-sample DiD
+# In-sample DiD linear regression
 lm.did <- function(df, plot = F){
   df_long <- gather(df, time, Y, Yb.pre:Yb.post)
   df_long$period <- ifelse(df_long$time=="Yb.pre",0,1)
@@ -229,6 +262,7 @@ plot_patt <- function(results, var_name){
                           color = variable)) +  geom_line() 
   return(plot_patt)
 }
+
 
 sumstats <- function(data){
   # Calibration targets

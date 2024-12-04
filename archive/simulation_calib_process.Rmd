@@ -3,8 +3,6 @@ title: "Simulation calibration process notebook"
 output: html_notebook
 ---
 
-**Do not include in submission**
-
 ```{r, include=FALSE}
 library(boot)
 library(Rlab)

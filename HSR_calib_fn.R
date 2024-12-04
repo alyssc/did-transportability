@@ -1,7 +1,6 @@
 ## Helper functions for calibration
 
 library(tidyverse)
-setwd("/Users/alyssachen/Desktop/Projects/target-practice")
 source("HSR_simulation_fn.R")
 
 # Run calib_assist multiple times to get average errors of calibration error

@@ -137,11 +137,4 @@ log( (q*(1-p))/(p*(1-q)) )
 ```
 
 
-```{r,include=F}
-# Drafting parameter test graphs (TO-DO: overlay on one graph)
-par(mfrow=c(1,2))
-hist(df[df$S==1,]$b, main = "Hist of b, CPC+ regions")
-hist(df[df$S==0,]$b, main = "Hist of b, non-CPC+ regions")
-
-```
 
