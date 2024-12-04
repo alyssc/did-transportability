@@ -24,7 +24,7 @@ scenario_params <- data.frame(expand.grid(
   gamma.4 = 282, 
   gamma.5 = -277,
   
-  beta.0 = -3.063,
+  beta.0 = -3.05,
   beta.3 = 0,
   beta.4 = 1.02,
   beta.5 = 1.301,
@@ -38,7 +38,7 @@ scenario_params <- data.frame(expand.grid(
   P= 1200)) %>%
   mutate(scenario=c(1:16))
 
-write_csv(scenario_params %>% select(scenario,om.1,om.2,phi.1,phi.2),"scenario_params_varying.csv")
+write_csv(scenario_params %>% select(scenario,om.1,om.2,phi.1,phi.2),"params/scenario_params_varying.csv")
 
 # Helper function to rbind the lists
 comb <- function(...) {
@@ -80,7 +80,7 @@ viol_10_params <- data.frame(expand.grid(
   P= 1200)) %>%
   mutate(scenario=c(1:9))
 
-write_csv(viol_10_params %>% select(scenario,gamma.6,gamma.7),"viol_10_params_varying.csv")
+write_csv(viol_10_params %>% select(scenario,gamma.6,gamma.7),"params/viol_10_params_varying.csv")
 
 
 # Parallelization
@@ -123,7 +123,7 @@ output$sumstats <- list('by.S'=do.call("rbind",output$sumstats[,'by.S']),
                         'by.AS'=do.call("rbind",output$sumstats[,'by.AS']),
                         'by.AS.long'=do.call("rbind",output$sumstats[,'by.AS.long']),
                         'diff.by.AS.long'=do.call("rbind",output$sumstats[,'diff.by.AS.long']))
-save(output,file="2024-07-23_HSR_results.RData")
+save(output,file="result_data/2024-07-23_HSR_results.RData")
 
 rm(output)
 
@@ -166,4 +166,4 @@ viol_10_output$sumstats <- list('by.S'=do.call("rbind",viol_10_output$sumstats[,
                                 'by.AS'=do.call("rbind",viol_10_output$sumstats[,'by.AS']),
                                 'by.AS.long'=do.call("rbind",viol_10_output$sumstats[,'by.AS.long']),
                                 'diff.by.AS.long'=do.call("rbind",viol_10_output$sumstats[,'diff.by.AS.long']))
-save(viol_10_output,file="2024-07-23_HSR_results_viol10.RData")
+save(viol_10_output,file="result_data/2024-07-23_HSR_results_viol10.RData")

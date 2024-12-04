@@ -1,8 +1,8 @@
 ## Making figures from simulation output
 library(tidyverse)
 source("HSR_plot_scaled_fn.R")
-load("2024-07-23_HSR_results.RData")
-load("2024-07-23_HSR_results_viol10.RData")
+load("result_data/2024-07-23_HSR_results.RData")
+load("result_data/2024-07-23_HSR_results_viol10.RData")
 
 scenario.output <- output
 
