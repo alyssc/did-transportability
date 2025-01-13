@@ -5,7 +5,7 @@ Code for "Transporting Difference-in-Differences Estimates to Assess Health Equi
 Includes simulation scripts and plots used to generate paper results. 
 
 * `HSR_simulation_fn.R`: Defines functions for generating simulations (eg. `make_regions`) and estimation (eg. `estimate_patt`) 
-* `sim_scale.R`: Scales simulation; saves output as `.Rdata` files in data folder
+* `sim_scale.R`: Scales simulation through parallelization; saves output as `.Rdata` files in data folder. Suitable for cluster computing on a server. 
 * `HSR_plot_scaled_fn.R`: Defines functions to plot scaled simulation results
 * `HSR_plot_scaled.R`: Plots scaled simulation results and saves to plots folder
 
